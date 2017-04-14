@@ -1,4 +1,20 @@
 #define _CFFI_
+
+/* We try to define Py_LIMITED_API before including Python.h.
+
+   Mess: we can only define it if Py_DEBUG, Py_TRACE_REFS and
+   Py_REF_DEBUG are not defined.  This is a best-effort approximation:
+   we can learn about Py_DEBUG from pyconfig.h, but it is unclear if
+   the same works for the other two macros.  Py_DEBUG implies them,
+   but not the other way around.
+*/
+#ifndef _CFFI_USE_EMBEDDING
+#  include <pyconfig.h>
+#  if !defined(Py_DEBUG) && !defined(Py_TRACE_REFS) && !defined(Py_REF_DEBUG)
+#    define Py_LIMITED_API
+#  endif
+#endif
+
 #include <Python.h>
 #ifdef __cplusplus
 extern "C" {
@@ -218,7 +234,9 @@ static int search_in_struct_unions(const struct _cffi_type_context_s *ctx,
 #  include <stdint.h>
 # endif
 # if _MSC_VER < 1800   /* MSVC < 2013 */
-   typedef unsigned char _Bool;
+#  ifndef __cplusplus
+    typedef unsigned char _Bool;
+#  endif
 # endif
 #else
 # include <stdint.h>
@@ -231,6 +249,12 @@ static int search_in_struct_unions(const struct _cffi_type_context_s *ctx,
 # define _CFFI_UNUSED_FN  __attribute__((unused))
 #else
 # define _CFFI_UNUSED_FN  /* nothing */
+#endif
+
+#ifdef __cplusplus
+# ifndef _Bool
+   typedef bool _Bool;   /* semi-hackish: C++ has no _Bool; bool is builtin */
+# endif
 #endif
 
 /**********  CPython-specific section  **********/
@@ -364,20 +388,6 @@ static PyObject *_cffi_init(const char *module_name, Py_ssize_t version,
   failure:
     Py_XDECREF(module);
     return NULL;
-}
-
-_CFFI_UNUSED_FN
-static PyObject **_cffi_unpack_args(PyObject *args_tuple, Py_ssize_t expected,
-                                    const char *fnname)
-{
-    if (PyTuple_GET_SIZE(args_tuple) != expected) {
-        PyErr_Format(PyExc_TypeError,
-                     "%.150s() takes exactly %zd arguments (%zd given)",
-                     fnname, expected, PyTuple_GET_SIZE(args_tuple));
-        return NULL;
-    }
-    return &PyTuple_GET_ITEM(args_tuple, 0);   /* pointer to the first item,
-                                                  the others follow */
 }
 
 /**********  end CPython-specific section  **********/
@@ -731,19 +741,9 @@ _cffi_f_brushfireFromObstacles(PyObject *self, PyObject *args)
   PyObject *arg5;
   PyObject *arg6;
   PyObject *arg7;
-  PyObject **aa;
 
-  aa = _cffi_unpack_args(args, 8, "brushfireFromObstacles");
-  if (aa == NULL)
+  if (!PyArg_UnpackTuple(args, "brushfireFromObstacles", 8, 8, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7))
     return NULL;
-  arg0 = aa[0];
-  arg1 = aa[1];
-  arg2 = aa[2];
-  arg3 = aa[3];
-  arg4 = aa[4];
-  arg5 = aa[5];
-  arg6 = aa[6];
-  arg7 = aa[7];
 
   datasize = _cffi_prepare_pointer_call_argument(
       _cffi_type(1), arg0, (char **)&x0);
@@ -832,20 +832,9 @@ _cffi_f_prune(PyObject *self, PyObject *args)
   PyObject *arg6;
   PyObject *arg7;
   PyObject *arg8;
-  PyObject **aa;
 
-  aa = _cffi_unpack_args(args, 9, "prune");
-  if (aa == NULL)
+  if (!PyArg_UnpackTuple(args, "prune", 9, 9, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7, &arg8))
     return NULL;
-  arg0 = aa[0];
-  arg1 = aa[1];
-  arg2 = aa[2];
-  arg3 = aa[3];
-  arg4 = aa[4];
-  arg5 = aa[5];
-  arg6 = aa[6];
-  arg7 = aa[7];
-  arg8 = aa[8];
 
   datasize = _cffi_prepare_pointer_call_argument(
       _cffi_type(1), arg0, (char **)&x0);
@@ -936,19 +925,9 @@ _cffi_f_thinning(PyObject *self, PyObject *args)
   PyObject *arg5;
   PyObject *arg6;
   PyObject *arg7;
-  PyObject **aa;
 
-  aa = _cffi_unpack_args(args, 8, "thinning");
-  if (aa == NULL)
+  if (!PyArg_UnpackTuple(args, "thinning", 8, 8, &arg0, &arg1, &arg2, &arg3, &arg4, &arg5, &arg6, &arg7))
     return NULL;
-  arg0 = aa[0];
-  arg1 = aa[1];
-  arg2 = aa[2];
-  arg3 = aa[3];
-  arg4 = aa[4];
-  arg5 = aa[5];
-  arg6 = aa[6];
-  arg7 = aa[7];
 
   datasize = _cffi_prepare_pointer_call_argument(
       _cffi_type(1), arg0, (char **)&x0);
