@@ -1,4 +1,4 @@
-##Intelligent Robot Systems 2016-2017
+## Intelligent Robot Systems 2016-2017
 
 This code was created in order to allow experimentation towards developing specific modules of an autonomous simulated vehicle that performs full exploration **and coverage** of an unknown a priori environment. Next, you can find instructions on how to setup the code in your PC / laptop, the description of the code, as well as the description challenges.
 
@@ -16,7 +16,7 @@ Challenge 1 [*2 pts*]: **Laser-based obstacle avoidance**
 
 You must fill the part of the code that calculates linear and rotational velocities using the LIDAR values. The objective is for the robot to wander, but not collide to obstacles. Please add the code [here](https://github.com/etsardou/intelligent_robot_systems_2016/blob/master/art_autonomous_exploration/src/speeds_assignment.py#L75) and [here](https://github.com/etsardou/intelligent_robot_systems_2016/blob/master/art_autonomous_exploration/src/speeds_assignment.py#L117).
 
-Notes: The robot **must** have a maximum absolute linear speed of **0.3 m/s** and maximum absolute rotational speed **0.3 rad/sec**. 
+Notes: The robot **must** have a maximum absolute linear speed of **0.3 m/s** and maximum absolute rotational speed **0.3 rad/sec**.
 
 In order to check this functionality turn [this](https://github.com/etsardou/intelligent_robot_systems_2016/blob/master/art_autonomous_exploration/config/autonomous_expl.yaml#L9) to ```False```.
 
