@@ -64,6 +64,8 @@ class RobotController(object):
         ############################### NOTE QUESTION ############################
         # Check what laser_scan contains and create linear and angular speeds
         # for obstacle avoidance
+        angle_min = self.laser_aggregation.angle_min
+        angle_max = self.laser_aggregation.angle_max
 
         ##########################################################################
         return [linear, angular]
