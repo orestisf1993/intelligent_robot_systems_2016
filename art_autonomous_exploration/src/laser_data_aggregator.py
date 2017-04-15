@@ -10,8 +10,8 @@ class LaserDataAggregator(object):
     def __init__(self):
         # Initialization of laser scan
         self.laser_scan = []
-        self.angle_min = None
-        self.angle_max = None
+        self.angle_min = 0
+        self.angle_max = 0
 
         # ROS Subscribers to the robot's laser
         laser_topic = rospy.get_param("laser_topic")

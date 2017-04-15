@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import numpy as np
 import rospy
 from geometry_msgs.msg import Twist
 
@@ -10,6 +11,9 @@ from sonar_data_aggregator import SonarDataAggregator
 
 # Class for assigning the robot speeds
 class RobotController(object):
+    MAX_LINEAR_VELOCITY = 0.3
+    MAX_ANGULAR_VELOCITY = 0.3
+
     # Constructor
     def __init__(self):
 
@@ -59,14 +63,18 @@ class RobotController(object):
     # Produces speeds from the laser
     def produceSpeedsLaser(self):
         scan = self.laser_aggregation.laser_scan
-        linear = 0
-        angular = 0
         ############################### NOTE QUESTION ############################
         # Check what laser_scan contains and create linear and angular speeds
         # for obstacle avoidance
+        assert scan
+
         angle_min = self.laser_aggregation.angle_min
         angle_max = self.laser_aggregation.angle_max
 
+        scan = np.array(scan)
+        theta = np.linspace(angle_min, angle_max, len(scan))
+        linear = -sum(np.cos(theta) / (scan ** 2))
+        angular = -sum(np.sin(theta) / (scan ** 2))
         ##########################################################################
         return [linear, angular]
 
@@ -91,23 +99,34 @@ class RobotController(object):
         # Get the submodule's speeds
         [l_laser, a_laser] = self.produceSpeedsLaser()
 
-        # You must fill these
-        self.linear_velocity = 0
-        self.angular_velocity = 0
-
         if self.move_with_target:
             [l_goal, a_goal] = self.navigation.velocitiesToNextSubtarget()
             ############################### NOTE QUESTION ############################
             # You must combine the two sets of speeds. You can use motor schema,
             # subsumption of whatever suits your better.
-
+            angular = 0
+            linear = 0
             ##########################################################################
         else:
             ############################### NOTE QUESTION ############################
             # Implement obstacle avoidance here using the laser speeds.
             # Hint: Subtract them from something constant
-            pass
+            c_u = 0.0001
+            c_w = 0.0005
+
+            angular = c_w * a_laser
+            angular = np.sign(angular) * min(self.MAX_ANGULAR_VELOCITY, abs(angular))
+            angular_coeff = abs(angular) / self.MAX_ANGULAR_VELOCITY
+            linear_coeff = (1 - angular_coeff) ** 2
+
+            linear = self.MAX_LINEAR_VELOCITY * linear_coeff + c_u * l_laser
+            linear = np.sign(linear) * min(self.MAX_LINEAR_VELOCITY, abs(linear))
             ##########################################################################
+
+        assert angular <= self.MAX_ANGULAR_VELOCITY
+        assert linear <= self.MAX_LINEAR_VELOCITY
+        self.angular_velocity = angular
+        self.linear_velocity = linear
 
     # Assistive functions
     def stopRobot(self):
