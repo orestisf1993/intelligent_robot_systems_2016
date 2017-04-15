@@ -1,0 +1,217 @@
+\documentclass[12pt,a4paper,titlepage,oneside]{scrartcl}
+% Argument 'table' for '\cellcolor{}' command.
+% Should be high because it might get loaded by another package with different arguments:
+% - http://tex.stackexchange.com/questions/87197/latex-error-option-clash-for-package-xcolor-for-table
+% - http://tex.stackexchange.com/questions/83101/option-clash-for-package-xcolor
+\usepackage[usenames, table]{xcolor}
+\usepackage[most]{tcolorbox}
+% --------------------- FONTS & LANGUAGE ---------------------
+\usepackage{amssymb,amsmath,amsthm,amsfonts}
+%\usepackage{mathspec}
+\usepackage[MnSymbol]{mathspec}
+%\defaultfontfeatures{Mapping=tex-text}
+\defaultfontfeatures{Scale=MatchLowercase,Numbers={Lining,Proportional}}
+
+\setmainfont{MinionPro}[
+    Path = fonts/,
+    Extension = .otf,
+    UprightFont = *-Regular,
+    ItalicFont = *-Italic,
+    BoldFont = *-SemiBold,
+    BoldItalicFont = *-SemiBoldItalic
+]
+\setsansfont{MyriadPro}[
+    Path = fonts/,
+    Extension = .ttf,
+    UprightFont = *-Regular,
+    ItalicFont = *-Italic,
+    BoldFont = *-SemiBold,
+    BoldItalicFont = *-SemiBoldItalic
+]
+\setmathfont{xits-math.otf}
+\setmathsfont[Set=Greek,Uppercase=Italic,Lowercase=Italic]{Minion Pro}
+\setmonofont{inconsolatalgc}[
+    Path = fonts/,
+    Extension = .ttf,
+    ItalicFont = *italic,
+    BoldFont = *bold,
+    BoldItalicFont = *bolditalic
+]
+
+% Polyglossia warning: due to a bug (https://github.com/reutenauer/polyglossia/issues/110) numbering with greek letters is incorrect.
+% /usr/share/texmf-dist/tex/latex/polyglossia/gloss-greek.ldf must be edited.
+% or \setmainlanguage[numerals=arabic]{greek} should be used instead.
+\usepackage{polyglossia}
+\setmainlanguage{greek}
+\setotherlanguages{english}
+\PolyglossiaSetup{greek}{indentfirst=true}
+\PolyglossiaSetup{english}{indentfirst=true}
+
+% ---------------------- MISCELLANEOUS PACKAGES ----------------------
+\usepackage{algpseudocode}
+% For comments in a new, empty line:
+\algnewcommand{\LineComment}[1]{\State \(\triangleright\) #1}
+%\usepackage{algorithmicx}
+%\usepackage[Algorithm,ruled]{algorithm}
+%\makeatletter
+%\renewcommand*{\ALG@name}{Αλγόριθμος}
+%\makeatother
+
+\usepackage{etoolbox}
+% Patch algpseudocode (?) to add vertical line for indentation level.
+% http://tex.stackexchange.com/a/351363/78791
+\newcommand{\algruledefaultfactor}{.75}
+\newcommand{\algstrut}[1][\algruledefaultfactor]{\vrule width 0pt
+depth .25\baselineskip height #1\baselineskip\relax}
+\newcommand*{\algrule}[1][\algorithmicindent]{\hspace*{.5em}\vrule\algstrut
+\hspace*{\dimexpr#1-.5em}}
+
+\makeatletter
+\newcount\ALG@printindent@tempcnta
+\def\ALG@printindent{%
+    \ifnum \theALG@nested>0% is there anything to print
+    \ifx\ALG@text\ALG@x@notext% is this an end group without any text?
+    % do nothing
+    \else
+    \unskip
+    % draw a rule for each indent level
+    \ALG@printindent@tempcnta=1
+    \loop
+    \algrule[\csname ALG@ind@\the\ALG@printindent@tempcnta\endcsname]%
+    \advance \ALG@printindent@tempcnta 1
+    \ifnum \ALG@printindent@tempcnta<\numexpr\theALG@nested+1\relax% can't do <=, so add one to RHS and use < instead
+    \repeat
+    \fi
+    \fi
+}%
+\patchcmd{\ALG@doentity}{\noindent\hskip\ALG@tlm}{\ALG@printindent}{}{\errmessage{failed to patch}}
+
+% Minted package for the listings.
+\usepackage[newfloat=true]{minted}
+\setminted{%
+    autogobble=true,%
+    breaklines=true,%
+    frame=none,%
+    linenos=false%
+}
+\setcounter{tocdepth}{3} % subsub has numbers
+\setcounter{secnumdepth}{3} % subsub in toc
+
+% For \includegraphics.
+% https://ctan.org/pkg/graphicx
+\usepackage{graphicx}
+\graphicspath{{./figures/}{./images/}}
+
+% Provides LaTeX the ability to create hyperlinks within the document.
+% https://www.ctan.org/pkg/hyperref
+% http://en.wikibooks.org/wiki/LaTeX/Hyperlinks#Hyperref
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    linkcolor={blue!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!70!black},
+    breaklinks=true
+}
+% Make a hyperlink navigate to the top of the figure in LaTeX when using hyperref.
+% http://stackoverflow.com/a/21251925/3430986
+\usepackage{caption}
+% Change the caption name for listing / code enviroment.
+\captionsetup[listing]{name=Αλγόριθμος}
+% And list of listings.
+% ftp://ftp.dante.de/tex-archive/macros/latex/contrib/minted/minted.pdf
+\SetupFloatingEnvironment{listing}{listname=Κατάλογος Αλγορίθμων}
+% Define code enviroment for captions and whatnot.
+\newenvironment{code}
+  {\captionsetup{type=listing}\tcolorbox[breakable,pad at break*=1mm, colback=blue!5!white,colframe=blue!75!black]}
+  {\endtcolorbox}
+
+% Extra argument for the enumerate enviroment.
+% http://ctan.org/pkg/enumerate
+\usepackage{enumerate}
+\renewcommand{\labelenumii}{\Roman{enumii}}
+
+% \multirow in tables.
+\usepackage{multirow}
+% Used for better handling of multi-line rows on tables.
+\usepackage{tabularx}
+% Better tables.
+\usepackage{booktabs}
+
+% For \FloatBarrier.
+\usepackage[section]{placeins}
+\makeatletter
+\AtBeginDocument{%
+  \expandafter\renewcommand\expandafter\subsection\expandafter{%
+    \expandafter\@fb@secFB\subsection
+  }%
+}
+\makeatother
+
+% For maxsizebox:
+% http://stackoverflow.com/a/29143366/3430986
+\usepackage{adjustbox}
+% For figure 'H' placement.
+\usepackage{float}
+
+% For logo in footer.
+%\usepackage[all]{background}
+\usepackage{lastpage}
+
+% Quick image refs etc.
+\newcommand{\imageref}[1] {%
+\hyperref[fig:#1]{\figurename{} \ref{fig:#1}}}
+
+\newcommand{\imagehere}[2]{%
+\begin{figure}[H]%
+\centering%
+\includegraphics[keepaspectratio, width=1.0\linewidth]{images/#1}%
+\caption{#2}
+\label{fig:#1}%
+\end{figure}%
+}
+
+% Fix tikz's "some package has redefined the meaning of the math-mode dollar sign" bug/error.
+% https://github.com/HiSPARC/infopakket/issues/27#issuecomment-134511920
+% http://tex.stackexchange.com/questions/165929/semiverbatim-with-tikz-in-beamer
+\makeatletter
+\global\let\tikz@ensure@dollar@catcode=\relax
+\makeatother
+
+% For subfigures
+\usepackage{subcaption}
+
+% For quotations. Verbatim enviroment for non-code text.
+% csquotes should be loaded after fvextra, to avoid a warning from the lineno package
+\usepackage{csquotes}
+
+% --------------------- CUSTOM MATH ---------------------
+% http://tex.stackexchange.com/a/56953/78791
+\newcommand{\argmin}{\operatornamewithlimits{argmin}}
+% http://tex.stackexchange.com/a/107190/78791
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\abs}[1]{\left\lvert#1\right\rvert}
+%\newcommand{\overbar}[1]{\mkern 1.5mu\overline{\mkern-1.5mu#1\mkern-1.5mu}\mkern 1.5mu}
+%% Number specific equation in align*
+%\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+%
+%% bad fonts for implies?
+%\renewcommand{\implies}{=\!\Rightarrow}
+
+% To use float.sty properly, load package float before wrapfig, and declare any new float types after loading both.
+\usepackage{wrapfig}
+\makeatletter
+\newcommand{\forceendwrapfig}{\WF@finale{}}
+\makeatother
+
+% --------------------- BIBLIOGRAPHY ---------------------
+\usepackage[numbers, sort]{natbib}
+\bibliographystyle{plainnat}
+
+% Fix URLs not breaking in citations
+% http://tex.stackexchange.com/a/115820/93245
+\usepackage{breakcites}
+\urlstyle{same}
+\Urlmuskip=0mu plus 1mu\relax
+
+\usepackage{microtype}
