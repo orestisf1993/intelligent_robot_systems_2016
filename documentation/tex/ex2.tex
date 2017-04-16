@@ -1,0 +1,28 @@
+\section{Challenge 2}
+Σε αυτό το κομμάτι καλούμαστε να μεταφέρουμε τις συντεταγμένες από το pose του ρομπότ στο σύστημα συντεταγμένων που χρησιμοποιεί το RViz.
+Σαν pose αναφερόμαστε στον συνδυασμό της θέσης (position) και προσανατολισμού (orientation)~\cite{shapiro2001computer}.
+
+Τα 2 συστήματα συντεταγμένων έχουν ίδιο orientation αλλά διαφορετική μονάδα μέτρησης (pixel και μέτρα) και αρχή των αξόνων.
+Άρα, για τον μετασχηματισμό που πρέπει να πραγματοποιηθεί δεν χρειάζεται να κάνουμε rotation αλλά θέλουμε scaling και μετατόπιση (translation).
+
+\sloppy Η \mintinline{python}!class RobotPerception! του αρχείου \texttt{robot\_perception.py} περιέχει τη πληροφορία που χρειαζόμαστε για τον μετασχηματισμό.
+Το πεδίο \mintinline{python}!RobotPerception.resolution! κρατάει την αναλογία μέτρα / pixel του occupancy grid map (ο χάρτης του RViz)
+ενώ το πεδίο \mintinline{python}!RobotPerception.origin! κρατάει το translation μεταξύ των αρχών των 2 συστημάτων συντεταγμένων \textbf{μετά} τον scaling μετασχηματισμό.
+
+Ο μετασχηματισμός που πρέπει να πραγματοποιηθεί είναι:
+\begin{align}
+    \mathbf{c'}  & = \mathbf{S} \mathbf{c}      \\
+    \mathbf{c''} & = \mathbf{c'} + \mathbf{c_0}
+\end{align}
+όπου $\mathbf{S} = \begin{bmatrix}
+resolution & 0 \\
+0 & resolution
+\end{bmatrix}$ και $\mathbf{c_0} = origin$.
+Σε κώδικα:
+\begin{code}
+\caption{Challenge 2: Μεταφορά συστήματος συντεταγμένων}
+\begin{pythoncode}
+ps.pose.position.x = p[0] * self.robot_perception.resolution + self.robot_perception.origin['x']
+ps.pose.position.y = p[1] * self.robot_perception.resolution + self.robot_perception.origin['y']
+\end{pythoncode}
+\end{code}

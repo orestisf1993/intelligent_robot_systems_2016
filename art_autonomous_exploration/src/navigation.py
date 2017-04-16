@@ -212,13 +212,12 @@ class Navigation(object):
         for p in self.path:
             ps = PoseStamped()
             ps.header.frame_id = "map"
-            ps.pose.position.x = 0
-            ps.pose.position.y = 0
             ######################### NOTE: QUESTION  ##############################
             # Fill the ps.pose.position values to show the path in RViz
             # You must understand what self.robot_perception.resolution
             # and self.robot_perception.origin are.
-
+            ps.pose.position.x = p[0] * self.robot_perception.resolution + self.robot_perception.origin['x']
+            ps.pose.position.y = p[1] * self.robot_perception.resolution + self.robot_perception.origin['y']
             ########################################################################
             ros_path.poses.append(ps)
         self.path_publisher.publish(ros_path)
