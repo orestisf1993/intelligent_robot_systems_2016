@@ -34,3 +34,6 @@ base_footprint_frame: '/base_footprint'
 
 # Cell Size 10, 20, 30, 50
 cell_size: 20
+
+max_linear_velocity: 0.3
+max_angular_velocity: 0.3

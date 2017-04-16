@@ -11,8 +11,8 @@ from sonar_data_aggregator import SonarDataAggregator
 
 # Class for assigning the robot speeds
 class RobotController(object):
-    MAX_LINEAR_VELOCITY = 0.3
-    MAX_ANGULAR_VELOCITY = 0.3
+    MAX_LINEAR_VELOCITY = rospy.get_param('max_linear_velocity')
+    MAX_ANGULAR_VELOCITY = rospy.get_param('max_angular_velocity')
 
     # Constructor
     def __init__(self):
