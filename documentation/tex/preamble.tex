@@ -4,7 +4,6 @@
 % - http://tex.stackexchange.com/questions/87197/latex-error-option-clash-for-package-xcolor-for-table
 % - http://tex.stackexchange.com/questions/83101/option-clash-for-package-xcolor
 \usepackage[usenames, table]{xcolor}
-\usepackage[most]{tcolorbox}
 % --------------------- FONTS & LANGUAGE ---------------------
 \usepackage{amssymb,amsmath,amsthm,amsfonts}
 %\usepackage{mathspec}
@@ -48,44 +47,6 @@
 \PolyglossiaSetup{english}{indentfirst=true}
 
 % ---------------------- MISCELLANEOUS PACKAGES ----------------------
-\usepackage{algpseudocode}
-% For comments in a new, empty line:
-\algnewcommand{\LineComment}[1]{\State \(\triangleright\) #1}
-%\usepackage{algorithmicx}
-%\usepackage[Algorithm,ruled]{algorithm}
-%\makeatletter
-%\renewcommand*{\ALG@name}{Αλγόριθμος}
-%\makeatother
-
-\usepackage{etoolbox}
-% Patch algpseudocode (?) to add vertical line for indentation level.
-% http://tex.stackexchange.com/a/351363/78791
-\newcommand{\algruledefaultfactor}{.75}
-\newcommand{\algstrut}[1][\algruledefaultfactor]{\vrule width 0pt
-depth .25\baselineskip height #1\baselineskip\relax}
-\newcommand*{\algrule}[1][\algorithmicindent]{\hspace*{.5em}\vrule\algstrut
-\hspace*{\dimexpr#1-.5em}}
-
-\makeatletter
-\newcount\ALG@printindent@tempcnta
-\def\ALG@printindent{%
-    \ifnum \theALG@nested>0% is there anything to print
-    \ifx\ALG@text\ALG@x@notext% is this an end group without any text?
-    % do nothing
-    \else
-    \unskip
-    % draw a rule for each indent level
-    \ALG@printindent@tempcnta=1
-    \loop
-    \algrule[\csname ALG@ind@\the\ALG@printindent@tempcnta\endcsname]%
-    \advance \ALG@printindent@tempcnta 1
-    \ifnum \ALG@printindent@tempcnta<\numexpr\theALG@nested+1\relax% can't do <=, so add one to RHS and use < instead
-    \repeat
-    \fi
-    \fi
-}%
-\patchcmd{\ALG@doentity}{\noindent\hskip\ALG@tlm}{\ALG@printindent}{}{\errmessage{failed to patch}}
-
 % Minted package for the listings.
 \usepackage[newfloat=true]{minted}
 \setminted{%
@@ -122,9 +83,8 @@ depth .25\baselineskip height #1\baselineskip\relax}
 % ftp://ftp.dante.de/tex-archive/macros/latex/contrib/minted/minted.pdf
 \SetupFloatingEnvironment{listing}{listname=Κατάλογος Αλγορίθμων}
 % Define code enviroment for captions and whatnot.
-\newenvironment{code}
-  {\captionsetup{type=listing}\tcolorbox[breakable,pad at break*=1mm, colback=blue!5!white,colframe=blue!75!black]}
-  {\endtcolorbox}
+\newenvironment{code}{\captionsetup{type=listing}\center}{\endcenter}
+\newminted{python}{frame=single,framerule=2pt}
 
 % Extra argument for the enumerate enviroment.
 % http://ctan.org/pkg/enumerate
