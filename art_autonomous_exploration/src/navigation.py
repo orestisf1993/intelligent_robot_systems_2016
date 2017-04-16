@@ -18,6 +18,9 @@ from utilities import RvizHandler
 
 # Class for implementing the navigation module of the robot
 class Navigation(object):
+    MAX_LINEAR_VELOCITY = rospy.get_param('max_linear_velocity')
+    MAX_ANGULAR_VELOCITY = rospy.get_param('max_angular_velocity')
+
     # Constructor
     def __init__(self):
 
@@ -244,13 +247,12 @@ class Navigation(object):
         self.inner_target_exists = True
 
     def velocitiesToNextSubtarget(self):
-
         [linear, angular] = [0, 0]
 
-        [rx, ry] = [self.robot_perception.robot_pose['x_px'] - self.robot_perception.origin[
-            'x'] / self.robot_perception.resolution,
-                    self.robot_perception.robot_pose['y_px'] - self.robot_perception.origin[
-                        'y'] / self.robot_perception.resolution]
+        rx = self.robot_perception.robot_pose['x_px'] - \
+             self.robot_perception.origin['x'] / self.robot_perception.resolution
+        ry = self.robot_perception.robot_pose['y_px'] - \
+             self.robot_perception.origin['y'] / self.robot_perception.resolution
         theta = self.robot_perception.robot_pose['th']
         ######################### NOTE: QUESTION  ##############################
         # The velocities of the robot regarding the next subtarget should be
@@ -258,11 +260,16 @@ class Navigation(object):
         # robot_perception and the next_subtarget [x,y]. From these, you can
         # compute the robot velocities for the vehicle to approach the target.
         # Hint: Trigonometry is required
-
         if self.subtargets and self.next_subtarget <= len(self.subtargets) - 1:
             st_x = self.subtargets[self.next_subtarget][0]
             st_y = self.subtargets[self.next_subtarget][1]
 
+            theta_g = math.atan2(st_y - ry, st_x - rx)
+            delta_theta = theta_g - theta
+            angular_coeff = delta_theta / math.pi + 2 * (delta_theta < -math.pi) - 2 * (delta_theta >= math.pi)
+            angular = self.MAX_ANGULAR_VELOCITY * angular_coeff
+            linear_coeff = 1 - abs(angular_coeff)
+            linear = self.MAX_LINEAR_VELOCITY * linear_coeff
         ######################### NOTE: QUESTION  ##############################
 
         return [linear, angular]
