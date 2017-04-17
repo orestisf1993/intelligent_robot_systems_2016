@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import division
 
 import numpy as np
 import rospy
@@ -100,31 +101,33 @@ class RobotController(object):
         [l_laser, a_laser] = self.produceSpeedsLaser()
 
         if self.move_with_target:
-            [l_goal, a_goal] = self.navigation.velocitiesToNextSubtarget()
             ############################### NOTE QUESTION ############################
             # You must combine the two sets of speeds. You can use motor schema,
             # subsumption of whatever suits your better.
-            angular = 0
-            linear = 0
+            # Initialize robot to goal velocities.
+            [linear, angular] = self.navigation.velocitiesToNextSubtarget()
+            c_u = 0.0001
+            c_w = 0.0005
             ##########################################################################
         else:
             ############################### NOTE QUESTION ############################
             # Implement obstacle avoidance here using the laser speeds.
             # Hint: Subtract them from something constant
-            c_u = 0.0001
-            c_w = 0.0005
-
-            angular = c_w * a_laser
-            angular = np.sign(angular) * min(self.MAX_ANGULAR_VELOCITY, abs(angular))
-            angular_coeff = abs(angular) / self.MAX_ANGULAR_VELOCITY
-            linear_coeff = (1 - angular_coeff) ** 2
-
-            linear = self.MAX_LINEAR_VELOCITY * linear_coeff + c_u * l_laser
-            linear = np.sign(linear) * min(self.MAX_LINEAR_VELOCITY, abs(linear))
+            # Initialize robot to max speed without any change in direction.
+            c_u = 0.001
+            c_w = 0.005
+            angular = 0
+            linear = self.MAX_LINEAR_VELOCITY
             ##########################################################################
 
-        assert angular <= self.MAX_ANGULAR_VELOCITY
-        assert linear <= self.MAX_LINEAR_VELOCITY
+        angular += c_w * a_laser
+        angular = np.sign(angular) * min(self.MAX_ANGULAR_VELOCITY, abs(angular))
+
+        linear = linear + c_u * l_laser
+        linear = np.sign(linear) * min(self.MAX_LINEAR_VELOCITY, abs(linear))
+
+        assert abs(angular) <= self.MAX_ANGULAR_VELOCITY
+        assert abs(linear) <= self.MAX_LINEAR_VELOCITY
         self.angular_velocity = angular
         self.linear_velocity = linear
 
