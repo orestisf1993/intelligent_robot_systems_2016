@@ -1,8 +1,10 @@
 #!/usr/bin/env python
+from __future__ import division
 
 import math
 import time
 
+import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
@@ -248,8 +250,6 @@ class Navigation(object):
         self.inner_target_exists = True
 
     def velocitiesToNextSubtarget(self):
-        [linear, angular] = [0, 0]
-
         rx = self.robot_perception.robot_pose['x_px'] - \
              self.robot_perception.origin['x'] / self.robot_perception.resolution
         ry = self.robot_perception.robot_pose['y_px'] - \
@@ -266,11 +266,16 @@ class Navigation(object):
             st_y = self.subtargets[self.next_subtarget][1]
 
             theta_g = math.atan2(st_y - ry, st_x - rx)
-            delta_theta = theta_g - theta
+            delta_theta = theta_g - theta  # All thetas in radians.
             angular_coeff = delta_theta / math.pi + 2 * (delta_theta < -math.pi) - 2 * (delta_theta >= math.pi)
-            angular = self.MAX_ANGULAR_VELOCITY * angular_coeff
-            linear_coeff = 1 - abs(angular_coeff)
-            linear = self.MAX_LINEAR_VELOCITY * linear_coeff
-        ######################### NOTE: QUESTION  ##############################
+            linear_coeff = (1 - abs(angular_coeff)) ** 6
+            # Experimental: Recalculate angular speed according to linear.
+            angular_coeff = (1 - linear_coeff) * np.sign(angular_coeff)
 
-        return [linear, angular]
+            linear = self.MAX_LINEAR_VELOCITY * linear_coeff
+            angular = self.MAX_ANGULAR_VELOCITY * angular_coeff
+            assert 0 <= abs(angular_coeff) <= 1
+            assert 0 <= linear_coeff <= 1
+            return linear, angular
+        else:
+            return 0, 0
