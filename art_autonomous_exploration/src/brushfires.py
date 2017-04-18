@@ -1,24 +1,17 @@
 #!/usr/bin/env python
-
-import rospy
-import random
-import math
-import numpy
-from timeit import default_timer as timer
-from utilities import RvizHandler
-from utilities import Cffi
 from sets import Set
-import scipy.misc
 
-#scipy.misc.imsave('/home/manos/Desktop/test.png', self.coverage)
+import numpy
 
-class Brushfires:
+from utilities import Cffi
+
+
+class Brushfires(object):
+    def __init__(self):
+        pass
 
     def obstaclesBrushfireCffi(self, ogm, ogm_limits):
         brush = numpy.full(ogm.shape, -1)
-
-        width = ogm.shape[0]
-        height = ogm.shape[1]
 
         for i in range(ogm_limits['min_x'], ogm_limits['max_x'] - 1):
             for j in range(ogm_limits['min_y'], ogm_limits['max_y'] - 1):
@@ -28,15 +21,9 @@ class Brushfires:
         brush = Cffi.brushfireFromObstacles(ogm, brush, ogm_limits)
         return brush
 
-
     def obstaclesBrushfire(self, ogm, ogm_limits):
         brush = numpy.full(ogm.shape, -1)
-
-        width = ogm.shape[0]
-        height = ogm.shape[1]
-
         _current = []
-
         for i in range(ogm_limits['min_x'], ogm_limits['max_x'] - 1):
             for j in range(ogm_limits['min_y'], ogm_limits['max_y'] - 1):
                 if ogm[i][j] > 49 or ogm[i][j] == -1:
@@ -44,7 +31,6 @@ class Brushfires:
                     _current.append((i, j))
 
         _next = []
-
         expanded = True
         counter = -1
         while expanded:
@@ -64,11 +50,9 @@ class Brushfires:
                             expanded = True
             _current = _next
             _next = []
-
         return brush
 
     def coverageLimitsBrushfire(self, ogm, coverage, robot_pose, origin, resolution):
-
         limits = Set()
 
         width = ogm.shape[0]
@@ -90,29 +74,19 @@ class Brushfires:
                             if coverage[i + ii][j + jj] != 100:
                                 cov_ok = True
                     if cov_ok:
-                        limits.add((\
-                                float(i) * resolution + origin['x'], \
-                                float(j) * resolution + origin['y']\
-                                ))
+                        limits.add((float(i) * resolution + origin['x'], float(j) * resolution + origin['y']))
         return limits
 
     def closestUncoveredBrushfire(self, ogm, coverage, brushogm, robot_pose, origin, resolution):
         limits = Set()
-
         brush = numpy.full(ogm.shape, -1)
-
-        width = ogm.shape[0]
-        height = ogm.shape[1]
-
         r_x = int(robot_pose['x_px'] - origin['x'] / resolution + 0.5)
         r_y = int(robot_pose['y_px'] - origin['y'] / resolution + 0.5)
-
         brush[r_x][r_y] = 0
 
         _current = []
         _current.append((r_x, r_y))
         _next = []
-
         expanded = True
         counter = -1
         while expanded:
@@ -134,11 +108,9 @@ class Brushfires:
                             lim = True
                         if ogm[_x][_y] > 49:
                             lim = False
-                if lim == True and brushogm[c[0]][c[1]] > 5: #TODO add this in param
-                    return\
-                            [c[0] * resolution + origin['x'], \
-                            c[1] * resolution + origin['y']]
+                if lim == True and brushogm[c[0]][c[1]] > 5:  # TODO add this in param
+                    return \
+                        [c[0] * resolution + origin['x'], c[1] * resolution + origin['y']]
             _current = _next
             _next = []
-
         return limits
