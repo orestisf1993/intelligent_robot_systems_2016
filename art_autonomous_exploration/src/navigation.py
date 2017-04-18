@@ -274,8 +274,8 @@ class Navigation(object):
 
             linear = self.MAX_LINEAR_VELOCITY * linear_coeff
             angular = self.MAX_ANGULAR_VELOCITY * angular_coeff
-            assert 0 <= abs(angular_coeff) <= 1
-            assert 0 <= linear_coeff <= 1
+            assert abs(angular_coeff) <= 1, "Angular coefficient outside of range [-1, 1]."
+            assert 0 <= linear_coeff <= 1, "Linear coefficient outside of range [0, 1]."
             return linear, angular
         else:
             return 0, 0

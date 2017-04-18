@@ -133,8 +133,8 @@ class RobotController(object):
             print("Robot was stuck so I set it's rotation speed.")
             angular = self.MAX_ANGULAR_VELOCITY / 3 * np.sign(a_laser)
 
-        assert angular <= self.MAX_ANGULAR_VELOCITY
-        assert abs(linear) <= self.MAX_LINEAR_VELOCITY
+        assert angular <= self.MAX_ANGULAR_VELOCITY, "Angular speed larger than maximum allowed."
+        assert abs(linear) <= self.MAX_LINEAR_VELOCITY, "Linear speed larger than maximum allowed."
         self.angular_velocity = angular
         self.linear_velocity = linear
 
