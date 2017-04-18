@@ -67,17 +67,19 @@ class RobotController(object):
         ############################### NOTE QUESTION ############################
         # Check what laser_scan contains and create linear and angular speeds
         # for obstacle avoidance
-        assert scan
+        if not scan:
+            return 0, 0
 
         angle_min = self.laser_aggregation.angle_min
         angle_max = self.laser_aggregation.angle_max
 
         scan = np.array(scan)
         theta = np.linspace(angle_min, angle_max, len(scan))
-        linear = -sum(np.cos(theta) / (scan ** 2))
-        angular = -sum(np.sin(theta) / (scan ** 2))
+        d_virt = 0.2
+        linear = -sum(np.cos(theta) / ((scan - d_virt) ** 2))
+        angular = -sum(np.sin(theta) / ((scan - d_virt) ** 2))
         ##########################################################################
-        return [linear, angular]
+        return linear, angular
 
     # Combines the speeds into one output using a motor schema approach
     def produceSpeeds(self):
@@ -98,16 +100,16 @@ class RobotController(object):
             self.navigation.selectTarget()
 
         # Get the submodule's speeds
-        [l_laser, a_laser] = self.produceSpeedsLaser()
+        l_laser, a_laser = self.produceSpeedsLaser()
 
         if self.move_with_target:
             ############################### NOTE QUESTION ############################
             # You must combine the two sets of speeds. You can use motor schema,
             # subsumption of whatever suits your better.
             # Initialize robot to goal velocities.
-            [linear, angular] = self.navigation.velocitiesToNextSubtarget()
-            c_u = 0.0001
-            c_w = 0.0005
+            linear, angular = self.navigation.velocitiesToNextSubtarget()
+            c_u = 0.00001
+            c_w = 0.00005
             ##########################################################################
         else:
             ############################### NOTE QUESTION ############################
@@ -126,7 +128,12 @@ class RobotController(object):
         linear = linear + c_u * l_laser
         linear = np.sign(linear) * min(self.MAX_LINEAR_VELOCITY, abs(linear))
 
-        assert abs(angular) <= self.MAX_ANGULAR_VELOCITY
+        # Heuristic: If the robot is not moving rotate in the direction produced by the laser.
+        if abs(linear) + abs(angular) < (self.MAX_LINEAR_VELOCITY + self.MAX_ANGULAR_VELOCITY) / 2 / 6:
+            print("Robot was stuck so I set it's rotation speed.")
+            angular = self.MAX_ANGULAR_VELOCITY / 3 * np.sign(a_laser)
+
+        assert angular <= self.MAX_ANGULAR_VELOCITY
         assert abs(linear) <= self.MAX_LINEAR_VELOCITY
         self.angular_velocity = angular
         self.linear_velocity = linear
