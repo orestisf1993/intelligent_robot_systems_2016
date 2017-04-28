@@ -79,18 +79,14 @@ class TargetSelection(object):
         if self.method == 'random' or force_random:
             return self.selectRandomTarget(ogm, coverage, brush)
         elif self.method_is_cost_based():
-            pass
 
-    def selectRandomTarget(self, ogm, coverage, brushogm, ogm_limits):
+    @staticmethod
+    def selectRandomTarget(ogm, coverage, brushogm):
         # The next target in pixels
         tinit = time.time()
-        next_target = [0, 0]
-        found = False
-        while not found:
+        while True:
             x_rand = random.randint(0, ogm.shape[0] - 1)
             y_rand = random.randint(0, ogm.shape[1] - 1)
             if ogm[x_rand][y_rand] < 50 and coverage[x_rand][y_rand] < 50 and brushogm[x_rand][y_rand] > 5:
-                next_target = [x_rand, y_rand]
-                found = True
-        Print.art_print("Select random target time: " + str(time.time() - tinit), Print.ORANGE)
-        return next_target
+                Print.art_print("Select random target time: " + str(time.time() - tinit), Print.ORANGE)
+                return x_rand, y_rand
