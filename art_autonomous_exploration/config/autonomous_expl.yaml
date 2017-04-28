@@ -1,5 +1,7 @@
 # Select the target function
-target_selector: 'random'
+#target_selector: 'random'
+target_selector: 'cost_based'
+cost_based_properties: {topo_threshold: 200}
 
 # Debugging purposes
 print_velocities: False
