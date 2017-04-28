@@ -1,7 +1,12 @@
 #!/usr/bin/env python
+from __future__ import division
 
+import math
 import random
 import time
+
+import numpy
+import rospy
 
 from brushfires import Brushfires
 from path_planning import PathPlanning
@@ -20,18 +25,22 @@ class TargetSelection(object):
         self.omega = 0.0
         self.radius = 0
         self.method = selection_method
+        if self.method_is_cost_based():
+            from robot_perception import RobotPerception
+            self.robot_perception = RobotPerception()
+            self.cost_based_properties = rospy.get_param("cost_based_properties")
 
         self.brush = Brushfires()
         self.topo = Topology()
         self.path_planning = PathPlanning()
 
-    def selectTarget(self, init_ogm, coverage, robot_pose, origin, resolution, force_random=False):
-        target = [-1, -1]
+    def method_is_cost_based(self):
+        return self.method == 'cost_based'
 
+    def selectTarget(self, init_ogm, coverage, robot_pose, origin, resolution, force_random=False):
         ######################### NOTE: QUESTION  ##############################
-        # Implement a smart way to select the next target. You have the
-        # following tools: ogm_limits, Brushfire field, OGM skeleton,
-        # topological nodes.
+        # Implement a smart way to select the next target. You have the following tools: ogm_limits, Brushfire field,
+        # OGM skeleton, topological nodes.
 
         # Find only the useful boundaries of OGM. Only there calculations
         # have meaning
@@ -47,20 +56,16 @@ class TargetSelection(object):
 
         # Calculate skeletonization
         tinit = time.time()
-        skeleton = self.topo.skeletonizationCffi(ogm,
-                                                 origin, resolution, ogm_limits)
+        skeleton = self.topo.skeletonizationCffi(ogm, origin, resolution, ogm_limits)
         Print.art_print("Skeletonization time: " + str(time.time() - tinit), Print.ORANGE)
 
         # Find topological graph
         tinit = time.time()
-        nodes = self.topo.topologicalNodes(ogm, skeleton, coverage, origin,
-                                           resolution, brush, ogm_limits)
+        nodes = self.topo.topologicalNodes(ogm, skeleton, coverage, origin, resolution, brush, ogm_limits)
         Print.art_print("Topo nodes time: " + str(time.time() - tinit), Print.ORANGE)
 
         # Visualization of topological nodes
-        vis_nodes = []
-        for n in nodes:
-            vis_nodes.append([n[0] * resolution + origin['x'], n[1] * resolution + origin['y']])
+        vis_nodes = [[n[0] * resolution + origin['x'], n[1] * resolution + origin['y']] for n in nodes]
         RvizHandler.printMarker(
             vis_nodes,
             1,  # Type: Arrow
@@ -71,11 +76,10 @@ class TargetSelection(object):
             0.1  # Scale
         )
 
-        # Random point
-        if self.method == 'random' or force_random == True:
-            target = self.selectRandomTarget(ogm, coverage, brush, ogm_limits)
-        ########################################################################
-        return target
+        if self.method == 'random' or force_random:
+            return self.selectRandomTarget(ogm, coverage, brush)
+        elif self.method_is_cost_based():
+            pass
 
     def selectRandomTarget(self, ogm, coverage, brushogm, ogm_limits):
         # The next target in pixels
