@@ -96,10 +96,6 @@ class TargetSelection(object):
                     return self.path_planning.createPath(g_robot_pose, path_target, resolution)
 
             target = self.select_by_cost(MapContainer())
-            Print.art_print(
-                "Chosen {} with {}.".format(str(target), self.is_good(target, ogm, coverage, brush)),
-                Print.BLUE
-            )  # TODO:del
             return target
         else:
             assert False, "Invalid target_selector method."
