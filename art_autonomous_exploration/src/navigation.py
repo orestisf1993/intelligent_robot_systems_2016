@@ -37,6 +37,7 @@ class Navigation(object):
         self.target_exists = False
         self.select_another_target = 0
         self.inner_target_exists = False
+        self.force_random = False
 
         # Container for the current path
         self.path = []
@@ -77,6 +78,7 @@ class Navigation(object):
             Print.art_print('\n~~~~ Time reset ~~~~', Print.RED)
             self.inner_target_exists = False
             self.target_exists = False
+            self.force_random = True
             return
 
         # Get the robot pose in pixels
@@ -169,7 +171,6 @@ class Navigation(object):
         # Call the target selection function to select the next best goal
         # Choose target function
         self.path = []
-        force_random = False
         while len(self.path) == 0:
             start = time.time()
             target = self.target_selection.selectTarget(
@@ -178,7 +179,8 @@ class Navigation(object):
                 self.robot_perception.robot_pose,
                 self.robot_perception.origin,
                 self.robot_perception.resolution,
-                force_random)
+                self.force_random)
+            self.force_random = False
 
             self.path = self.path_planning.createPath(
                 g_robot_pose,
@@ -189,7 +191,7 @@ class Navigation(object):
                 Print.art_print(
                     "Path planning failed. Fallback to random target selection",
                     Print.RED)
-                force_random = True
+                self.force_random = True
 
         # Reverse the path to start from the robot
         self.path = self.path[::-1]
