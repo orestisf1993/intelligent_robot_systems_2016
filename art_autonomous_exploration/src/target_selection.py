@@ -77,8 +77,12 @@ class TargetSelection(object):
             0.1  # Scale
         )
 
+        try:
+            tinit = time.time()
+        except:
+            tinit = None
         if self.method == 'random' or force_random:
-            return self.selectRandomTarget(ogm, coverage, brush)
+            target = self.selectRandomTarget(ogm, coverage, brush)
         elif self.method_is_cost_based():
             g_robot_pose = self.robot_perception.getGlobalCoordinates([robot_pose['x_px'], robot_pose['y_px']])
 
@@ -98,19 +102,19 @@ class TargetSelection(object):
                     return self.path_planning.createPath(g_robot_pose, path_target, resolution)
 
             target = self.select_by_cost(MapContainer())
-            return target
         else:
             assert False, "Invalid target_selector method."
+        if tinit is not None:
+            Print.art_print("Target method {} time: {}".format(self.method, time.time() - tinit), Print.ORANGE)
+        return target
 
     @staticmethod
     def selectRandomTarget(ogm, coverage, brushogm):
         # The next target in pixels
-        tinit = time.time()
         while True:
             x_rand = random.randint(0, ogm.shape[0] - 1)
             y_rand = random.randint(0, ogm.shape[1] - 1)
             if ogm[x_rand][y_rand] < 50 and coverage[x_rand][y_rand] < 50 and brushogm[x_rand][y_rand] > 5:
-                Print.art_print("Select random target time: " + str(time.time() - tinit), Print.ORANGE)
                 return x_rand, y_rand
 
     @staticmethod
@@ -119,7 +123,6 @@ class TargetSelection(object):
         return ogm[x][y] < 50 and coverage[x][y] < 50 and brush[x][y] > 5
 
     def select_by_cost(self, map_info):
-        tinit = time.time()
         numpy.set_printoptions(precision=3, threshold=numpy.nan, suppress=True)  # TODO:del
         nodes, paths = self.choose_best_nodes(map_info)
         if not nodes:
@@ -136,7 +139,6 @@ class TargetSelection(object):
         target = nodes[best_path_idx]
 
         Print.art_print("Best: {}".format(best_path_idx), Print.BLUE)
-        Print.art_print("Select {} target time: {}".format(self.method, time.time() - tinit), Print.ORANGE)
         return target
 
     def choose_best_nodes(self, map_info):
