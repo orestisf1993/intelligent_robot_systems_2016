@@ -87,8 +87,8 @@ class TargetSelection(object):
                     self.coverage = coverage
                     self.ogm = ogm
                     self.nodes = [node for node in nodes if TargetSelection.is_good(node, ogm, coverage, brush)]
-                    self.xy_g = [robot_pose['x_px'] - origin['x'] / resolution, robot_pose['y_px'] - origin['y'] /
-                                 resolution]
+                    self.xy_g = [robot_pose['x_px'] - origin['x'] / resolution,
+                                 robot_pose['y_px'] - origin['y'] / resolution]
                     self.theta = robot_pose['th']
 
                 @staticmethod
