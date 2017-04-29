@@ -89,8 +89,8 @@ class TargetSelection(object):
                     self.ogm = ogm
                     # TODO: filter nodes elsewhere.
                     self.nodes = [node for node in nodes if TargetSelection.is_good(node, ogm, coverage, brush)]
-                    self.xy_g = [robot_pose['x_px'] - origin['x'] / resolution,
-                                 robot_pose['y_px'] - origin['y'] / resolution]
+                    self.robot_px = [robot_pose['x_px'] - origin['x'] / resolution,
+                                     robot_pose['y_px'] - origin['y'] / resolution]
                     self.theta = robot_pose['th']
 
                 @staticmethod
@@ -128,9 +128,9 @@ class TargetSelection(object):
         best_path_idx = self.weight_costs(
             # TODO: one for path in paths?
             [self.topo_cost_path(path, map_info.ogm) for path in paths],  # Topological
-            [self.distance_cost(path, map_info.xy_g) for path in paths],  # Distance
             [self.coverage_cost(path, map_info.coverage) for path in paths],  # Coverage
-            [self.rotation_cost(path, map_info.xy_g, map_info.theta) for path in paths]  # Rotational
+            [self.distance_cost(path, map_info.robot_px) for path in paths],  # Distance
+            [self.rotation_cost(path, map_info.robot_px, map_info.theta) for path in paths]  # Rotational
         ).argmax()
         assert paths[best_path_idx]
         target = nodes[best_path_idx]
@@ -142,11 +142,13 @@ class TargetSelection(object):
     def choose_best_nodes(self, map_info):
         # Since path planning takes a lot of time for many nodes we should reduce the possible result to the nodes
         # with the best distance and topological costs.
-        topo_costs = [self.topo_cost(node, map_info.ogm) for node in map_info.nodes]
+        def distance_cost_from_robot(point):
+            robot_px = map_info.robot_px
+            return self.distance_coeff(point, robot_px) * self.distance(point, robot_px)
+
         best_nodes_idx = self.weight_costs(
-            # Use simple distance function without coeff. An alternative would be to use self.distance_coeff.
-            [self.distance(node, map_info.xy_g) for node in map_info.nodes],
-            topo_costs,
+            [self._topological_cost(node, map_info.ogm) for node in map_info.nodes],
+            [distance_cost_from_robot(node) for node in map_info.nodes]
         ).argsort()[::-1]  # We need descending order since we now want to maximize.
 
         count = 0
@@ -194,17 +196,15 @@ class TargetSelection(object):
         return result
 
     @staticmethod
-    def distance_cost(path, xy_g):
-        weighted_distances = (TargetSelection.distance(node1, node2) * TargetSelection.distance_coeff(node1, xy_g) for
-                              node1, node2 in zip(path[:-1], path[1:]))
+    def distance_cost(path, robot_px):
+        weighted_distances = (TargetSelection.distance(node1, node2) * TargetSelection.distance_coeff(node1, robot_px)
+                              for node1, node2 in zip(path[:-1], path[1:]))
         return sum(weighted_distances)
 
     @staticmethod
-    def distance_coeff(node, xy_g):
-        s = 100
-        epsilon = 0.0001
+    def distance_coeff(node, robot_px, s=100, epsilon=0.0001):
         x_n, y_n = node
-        x_g, y_g = xy_g
+        x_g, y_g = robot_px
         coeff = 1 - math.exp(-((x_n - x_g) ** 2 / (2 * s ** 2) + (y_n - y_g) ** 2 / (2 * s ** 2))) + epsilon
         return 1 / coeff
 
@@ -215,9 +215,9 @@ class TargetSelection(object):
         return math.sqrt((x_1 - x_2) ** 2 + (y_1 - y_2) ** 2)
 
     @staticmethod
-    def rotation_cost(path, xy_g, theta):
+    def rotation_cost(path, robot_px, theta):
         rotation = 0
-        rx, ry = xy_g
+        rx, ry = robot_px
         theta_old = theta
         for node in path:
             st_x, st_y = node
