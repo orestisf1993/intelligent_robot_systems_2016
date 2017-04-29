@@ -126,10 +126,11 @@ class TargetSelection(object):
         costs = self.normalize_costs(numpy.array([
             [self.topo_cost(node, map_info.ogm) for node in nodes],  # Topological
             [self.distance_cost(path, map_info.xy_g) for path in paths],  # Distance
+            [self.coverage_cost(path, map_info.coverage) for path in paths],  # Coverage
             [self.rotation_cost(path, map_info.xy_g, map_info.theta) for path in paths]  # Rotational
         ]))
         weights = 2 ** numpy.arange(costs.shape[0] - 1, -1, -1)
-        assert numpy.allclose(weights, [4, 2, 1])
+        assert numpy.allclose(weights, [8, 4, 2, 1])
         best_path_idx = numpy.average(costs, axis=0, weights=weights).argmax()
         assert paths[best_path_idx]
         target = nodes[best_path_idx]
@@ -209,12 +210,10 @@ class TargetSelection(object):
             theta_old = theta_new
         return rotation
 
-    # TODO: coverage?
     @staticmethod
     def coverage_cost(path, coverage):
         coverage_sum = sum(coverage[x][y] for x, y in path)
-        # TODO: do we need 255? We are normalizing in [0, 1] anyway. Also path is static len().
-        return coverage_sum / 255 / len(path)
+        return -coverage_sum
 
     @staticmethod
     def normalize_costs(costs):
