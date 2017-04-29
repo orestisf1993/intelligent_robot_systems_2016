@@ -8,6 +8,8 @@ import time
 
 import numpy
 import rospy
+from scipy.cluster.vq import kmeans2, whiten
+from scipy.spatial.distance import euclidean
 
 from brushfires import Brushfires
 from path_planning import PathPlanning
@@ -145,6 +147,7 @@ class TargetSelection(object):
     def choose_best_nodes(self, map_info):
         # Since path planning takes a lot of time for many nodes we should reduce the possible result to the nodes
         # with the best distance and topological costs.
+        nodes = list(self.cluster_nodes(map_info.nodes, map_info.robot_px))
 
         topo_costs = [self._topological_cost(node, map_info.ogm) for node in nodes]
         best_nodes_idx = self.weight_costs(
@@ -161,6 +164,20 @@ class TargetSelection(object):
                 yield node, path, topo_costs[idx]
             if count == 7:  # TODO:configurable
                 break
+
+    @staticmethod
+    def cluster_nodes(nodes_original, robot_px):
+        Print.art_print("Trying to cluster:" + str(nodes_original), Print.BLUE)
+        whitened = whiten(nodes_original)
+        _, cluster_idx = kmeans2(whitened, 10)  # TODO:#clusters configurable
+        Print.art_print("Ended with clusters:" + str(cluster_idx), Print.BLUE)
+
+        keyfun = lambda x: cluster_idx[x[0]]
+        nodes = sorted(enumerate(nodes_original), key=keyfun)
+        for _, group in itertools.groupby(nodes, key=keyfun):
+            # For each cluster pick the farthest one.
+            max_idx = max(group, key=lambda x: euclidean(robot_px, x[1]))[0]
+            yield nodes_original[max_idx]
 
     def weight_costs(self, *cost_vectors, **kwargs):
         costs = self.normalize_costs(numpy.array(tuple(vector for vector in cost_vectors)))
