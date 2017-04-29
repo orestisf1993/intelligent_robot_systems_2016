@@ -121,12 +121,13 @@ class TargetSelection(object):
     def select_by_cost(self, map_info):
         tinit = time.time()
         numpy.set_printoptions(precision=3, threshold=numpy.nan, suppress=True)  # TODO:del
-        nodes, paths, topo_costs = self.choose_best_nodes(map_info)
+        nodes, paths = self.choose_best_nodes(map_info)
         if not nodes:
             return -1, -1
 
         best_path_idx = self.weight_costs(
-            topo_costs,
+            # TODO: one for path in paths?
+            [self.topo_cost_path(path, map_info.ogm) for path in paths],  # Topological
             [self.distance_cost(path, map_info.xy_g) for path in paths],  # Distance
             [self.coverage_cost(path, map_info.coverage) for path in paths],  # Coverage
             [self.rotation_cost(path, map_info.xy_g, map_info.theta) for path in paths]  # Rotational
@@ -151,7 +152,6 @@ class TargetSelection(object):
         count = 0
         paths = []
         nodes_new = []
-        topo_costs_new = []
         for idx in best_nodes_idx:
             node = map_info.nodes[idx]
             path = map_info.create_path(node)
@@ -159,10 +159,9 @@ class TargetSelection(object):
                 count += 1
                 paths.append(path)
                 nodes_new.append(node)
-                topo_costs_new.append(topo_costs[idx])
             if count == 5:  # TODO:configurable
                 break
-        return nodes_new, paths, topo_costs_new
+        return nodes_new, paths
 
     def weight_costs(self, *cost_vectors, **kwargs):
         costs = self.normalize_costs(numpy.array(tuple(vector for vector in cost_vectors)))
@@ -172,6 +171,9 @@ class TargetSelection(object):
         else:
             weights = 2 ** numpy.arange(costs.shape[0] - 1, -1, -1)
         return numpy.average(costs, axis=0, weights=weights)
+
+    def topo_cost_path(self, path, ogm):
+        return sum(self.topo_cost(node, ogm) for node in path)
 
     # TODO: topo -> topological in file
     def topo_cost(self, node, ogm):
