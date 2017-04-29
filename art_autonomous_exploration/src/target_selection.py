@@ -119,12 +119,12 @@ class TargetSelection(object):
     def select_by_cost(self, map_info):
         tinit = time.time()
         numpy.set_printoptions(precision=3, threshold=numpy.nan)  # TODO:del
-        nodes, paths = self.choose_probable_paths(map_info.nodes, map_info.create_path, map_info.xy_g)
+        nodes, paths, topo_costs = self.choose_probable_paths(map_info)
         if not nodes:
             return -1, -1
 
         costs = self.normalize_costs(numpy.array([
-            [self.topo_cost(node, map_info.ogm) for node in nodes],  # Topological
+            topo_costs,
             [self.distance_cost(path, map_info.xy_g) for path in paths],  # Distance
             [self.coverage_cost(path, map_info.coverage) for path in paths],  # Coverage
             [self.rotation_cost(path, map_info.xy_g, map_info.theta) for path in paths]  # Rotational
@@ -140,25 +140,33 @@ class TargetSelection(object):
         Print.art_print("Select {} target time: {}".format(self.method, time.time() - tinit), Print.ORANGE)
         return target
 
-    @staticmethod
-    def choose_probable_paths(nodes, create_path, xy_g):
+    def choose_probable_paths(self, map_info):
         # Since path planning takes a lot of time for more nodes we should reduce the possible result to the nodes
-        # closer to the robot.
-        closer_nodes = numpy.array([TargetSelection.distance(node, xy_g) for node in nodes]).argsort()
+        # with the best topological and coverage costs.
+        # Coverage cost will only include the end node not the whole path.
+        topo_costs = [self.topo_cost(node, map_info.ogm) for node in map_info.nodes]
+        costs = self.normalize_costs(numpy.array([
+            topo_costs,
+            [self.coverage_cost((node,), map_info.coverage) for node in map_info.nodes]
+        ]))
+        # We need descending order since we now want to maximize.
+        best_nodes_idx = numpy.average(costs, axis=0, weights=numpy.array([3, 1])).argsort()[::-1]
 
         count = 0
         paths = []
         nodes_new = []
-        for node_idx in closer_nodes:
-            node = nodes[node_idx]
-            path = create_path(node)
+        topo_costs_new = []
+        for idx in best_nodes_idx:
+            node = map_info.nodes[idx]
+            path = map_info.create_path(node)
             if path:
                 count += 1
                 paths.append(path)
                 nodes_new.append(node)
+                topo_costs_new.append(topo_costs[idx])
             if count == 5:  # TODO:configurable
                 break
-        return nodes_new, paths
+        return nodes_new, paths, topo_costs_new
 
     def topo_cost(self, node, ogm):
         threshold = self.cost_based_properties['topo_threshold']
