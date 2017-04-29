@@ -119,7 +119,7 @@ class TargetSelection(object):
 
     def select_by_cost(self, map_info):
         tinit = time.time()
-        numpy.set_printoptions(precision=3, threshold=numpy.nan)  # TODO:del
+        numpy.set_printoptions(precision=3, threshold=numpy.nan, suppress=True)  # TODO:del
         nodes, paths, topo_costs = self.choose_best_nodes(map_info)
         if not nodes:
             return -1, -1
