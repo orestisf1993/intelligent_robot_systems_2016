@@ -119,7 +119,7 @@ class TargetSelection(object):
     def select_by_cost(self, map_info):
         tinit = time.time()
         numpy.set_printoptions(precision=3, threshold=numpy.nan)  # TODO:del
-        nodes, paths = self.choose_possible_paths(map_info.nodes, map_info.create_path, map_info.xy_g)
+        nodes, paths = self.choose_probable_paths(map_info.nodes, map_info.create_path, map_info.xy_g)
         if not nodes:
             return -1, -1
 
@@ -141,7 +141,7 @@ class TargetSelection(object):
         return target
 
     @staticmethod
-    def choose_possible_paths(nodes, create_path, xy_g):
+    def choose_probable_paths(nodes, create_path, xy_g):
         # Since path planning takes a lot of time for more nodes we should reduce the possible result to the nodes
         # closer to the robot.
         closer_nodes = numpy.array([TargetSelection.distance(node, xy_g) for node in nodes]).argsort()
