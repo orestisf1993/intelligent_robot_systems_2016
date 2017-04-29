@@ -86,6 +86,7 @@ class TargetSelection(object):
                     self.skeleton = skeleton
                     self.coverage = coverage
                     self.ogm = ogm
+                    # TODO: filter nodes elsewhere.
                     self.nodes = [node for node in nodes if TargetSelection.is_good(node, ogm, coverage, brush)]
                     self.xy_g = [robot_pose['x_px'] - origin['x'] / resolution,
                                  robot_pose['y_px'] - origin['y'] / resolution]
@@ -119,11 +120,11 @@ class TargetSelection(object):
     def select_by_cost(self, map_info):
         tinit = time.time()
         numpy.set_printoptions(precision=3, threshold=numpy.nan)  # TODO:del
-        nodes, paths, topo_costs = self.choose_probable_paths(map_info)
+        nodes, paths, topo_costs = self.choose_best_nodes(map_info)
         if not nodes:
             return -1, -1
 
-        costs = self.normalize_costs(numpy.array([
+        best_path_idx = self.weight_costs(
             topo_costs,
             [self.distance_cost(path, map_info.xy_g) for path in paths],  # Distance
             [self.coverage_cost(path, map_info.coverage) for path in paths],  # Coverage
@@ -136,18 +137,16 @@ class TargetSelection(object):
         Print.art_print("Select {} target time: {}".format(self.method, time.time() - tinit), Print.ORANGE)
         return target
 
-    def choose_probable_paths(self, map_info):
+    def choose_best_nodes(self, map_info):
         # Since path planning takes a lot of time for more nodes we should reduce the possible result to the nodes
-        # with the best topological and coverage costs.
+        # with the best distance and topological costs.
         # Coverage cost will only include the end node not the whole path.
+        # We need descending order since we now want to maximize.
         topo_costs = [self.topo_cost(node, map_info.ogm) for node in map_info.nodes]
         best_nodes_idx = self.weight_costs(
             [self.dist_coeff(node, map_info.xy_g) for node in map_info.nodes],
             topo_costs,
-            [self.coverage_cost((node,), map_info.coverage) for node in map_info.nodes]
-        ]))
-        # We need descending order since we now want to maximize.
-        best_nodes_idx = numpy.average(costs, axis=0, weights=numpy.array([3, 1])).argsort()[::-1]
+        ).argsort()[::-1]
 
         count = 0
         paths = []
