@@ -37,6 +37,7 @@ class TargetSelection(object):
     def method_is_cost_based(self):
         return self.method == 'cost_based'
 
+    # TODO: init_ogm -> ogm
     def selectTarget(self, init_ogm, coverage, robot_pose, origin, resolution, force_random=False):
         ######################### NOTE: QUESTION  ##############################
         # Implement a smart way to select the next target. You have the following tools: ogm_limits, Brushfire field,
@@ -138,15 +139,14 @@ class TargetSelection(object):
         return target
 
     def choose_best_nodes(self, map_info):
-        # Since path planning takes a lot of time for more nodes we should reduce the possible result to the nodes
+        # Since path planning takes a lot of time for many nodes we should reduce the possible result to the nodes
         # with the best distance and topological costs.
-        # Coverage cost will only include the end node not the whole path.
-        # We need descending order since we now want to maximize.
         topo_costs = [self.topo_cost(node, map_info.ogm) for node in map_info.nodes]
         best_nodes_idx = self.weight_costs(
-            [self.dist_coeff(node, map_info.xy_g) for node in map_info.nodes],
+            # Use simple distance function without coeff. An alternative would be to use self.distance_coeff.
+            [self.distance(node, map_info.xy_g) for node in map_info.nodes],
             topo_costs,
-        ).argsort()[::-1]
+        ).argsort()[::-1]  # We need descending order since we now want to maximize.
 
         count = 0
         paths = []
@@ -173,6 +173,7 @@ class TargetSelection(object):
             weights = 2 ** numpy.arange(costs.shape[0] - 1, -1, -1)
         return numpy.average(costs, axis=0, weights=weights)
 
+    # TODO: topo -> topological in file
     def topo_cost(self, node, ogm):
         threshold = self.cost_based_properties['topo_threshold']
         result = 0
@@ -192,12 +193,12 @@ class TargetSelection(object):
 
     @staticmethod
     def distance_cost(path, xy_g):
-        weighted_distances = (TargetSelection.distance(node1, node2) * TargetSelection.dist_coeff(node1, xy_g) for
+        weighted_distances = (TargetSelection.distance(node1, node2) * TargetSelection.distance_coeff(node1, xy_g) for
                               node1, node2 in zip(path[:-1], path[1:]))
         return sum(weighted_distances)
 
     @staticmethod
-    def dist_coeff(node, xy_g):
+    def distance_coeff(node, xy_g):
         s = 100
         epsilon = 0.0001
         x_n, y_n = node
