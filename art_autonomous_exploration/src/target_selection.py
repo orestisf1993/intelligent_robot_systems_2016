@@ -128,14 +128,10 @@ class TargetSelection(object):
             [self.distance_cost(path, map_info.xy_g) for path in paths],  # Distance
             [self.coverage_cost(path, map_info.coverage) for path in paths],  # Coverage
             [self.rotation_cost(path, map_info.xy_g, map_info.theta) for path in paths]  # Rotational
-        ]))
-        weights = 2 ** numpy.arange(costs.shape[0] - 1, -1, -1)
-        assert numpy.allclose(weights, [8, 4, 2, 1])
-        best_path_idx = numpy.average(costs, axis=0, weights=weights).argmax()
+        ).argmax()
         assert paths[best_path_idx]
         target = nodes[best_path_idx]
 
-        Print.art_print(str(costs), Print.BLUE)  # TODO:del
         Print.art_print("Best: {}".format(best_path_idx), Print.BLUE)
         Print.art_print("Select {} target time: {}".format(self.method, time.time() - tinit), Print.ORANGE)
         return target
@@ -145,7 +141,8 @@ class TargetSelection(object):
         # with the best topological and coverage costs.
         # Coverage cost will only include the end node not the whole path.
         topo_costs = [self.topo_cost(node, map_info.ogm) for node in map_info.nodes]
-        costs = self.normalize_costs(numpy.array([
+        best_nodes_idx = self.weight_costs(
+            [self.dist_coeff(node, map_info.xy_g) for node in map_info.nodes],
             topo_costs,
             [self.coverage_cost((node,), map_info.coverage) for node in map_info.nodes]
         ]))
@@ -167,6 +164,15 @@ class TargetSelection(object):
             if count == 5:  # TODO:configurable
                 break
         return nodes_new, paths, topo_costs_new
+
+    def weight_costs(self, *cost_vectors, **kwargs):
+        costs = self.normalize_costs(numpy.array(tuple(vector for vector in cost_vectors)))
+        Print.art_print(str(costs), Print.BLUE)  # TODO:del
+        if 'weights' in kwargs:
+            weights = kwargs['weights']
+        else:
+            weights = 2 ** numpy.arange(costs.shape[0] - 1, -1, -1)
+        return numpy.average(costs, axis=0, weights=weights)
 
     def topo_cost(self, node, ogm):
         threshold = self.cost_based_properties['topo_threshold']
@@ -228,4 +234,6 @@ class TargetSelection(object):
         """
         :rtype: numpy.ndarray
         """
+        Print.art_print("Before normalize:\n" + str(costs), Print.BLUE)  # TODO:del
+        # TODO: Should we normalize to [0, 1]?
         return 1 - ((costs.transpose() - costs.min(axis=1)) / costs.ptp(axis=1)).transpose()
