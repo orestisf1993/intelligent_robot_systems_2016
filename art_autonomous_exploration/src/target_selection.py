@@ -247,10 +247,9 @@ class TargetSelection(object):
     @staticmethod
     def coverage_cost(path, coverage):
         coverage_sum = sum(coverage[x][y] for x, y in path)
-        if numpy.isclose(coverage_sum, 0):
-            return 0
-        else:
-            return 1 / coverage_sum
+        # coverage_sum = max(0.01, coverage_sum)
+        # return 1 / coverage_sum
+        return coverage_sum
 
     @staticmethod
     def normalize_costs(costs):
