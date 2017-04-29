@@ -229,7 +229,10 @@ class TargetSelection(object):
     @staticmethod
     def coverage_cost(path, coverage):
         coverage_sum = sum(coverage[x][y] for x, y in path)
-        return -coverage_sum
+        if numpy.isclose(coverage_sum, 0):
+            return 0
+        else:
+            return 1 / coverage_sum
 
     @staticmethod
     def normalize_costs(costs):
@@ -237,5 +240,5 @@ class TargetSelection(object):
         :rtype: numpy.ndarray
         """
         Print.art_print("Before normalize:\n" + str(costs), Print.BLUE)  # TODO:del
-        # TODO: Should we normalize to [0, 1]?
-        return 1 - ((costs.transpose() - costs.min(axis=1)) / costs.ptp(axis=1)).transpose()
+        assert (costs >= 0).all()
+        return 1 - (costs.transpose() / numpy.abs(costs).max(axis=1)).transpose()
