@@ -128,8 +128,10 @@ class TargetSelection(object):
     def select_by_cost(self, map_info):
         numpy.set_printoptions(precision=3, threshold=numpy.nan, suppress=True)  # TODO:del
         nodes, paths, topo_costs = zip(*self.choose_best_nodes(map_info))
-        if not nodes:
+        if nodes[0] is None:  # choose_best_node's yield when no path is found will make nodes = (None,)
             return -1, -1
+        elif len(nodes) == 1:
+            return nodes[0]
 
         best_path_idx = self.weight_costs(
             # TODO: one for path in paths?
@@ -164,6 +166,10 @@ class TargetSelection(object):
                 yield node, path, topo_costs[idx]
             if count == 7:  # TODO:configurable
                 break
+        if count == 0:
+            Print.art_print("Failed to create any path. Falling back to random.", Print.RED)
+            self.method = 'random'
+            yield None, None, None
 
     @staticmethod
     def cluster_nodes(nodes_original, robot_px):
