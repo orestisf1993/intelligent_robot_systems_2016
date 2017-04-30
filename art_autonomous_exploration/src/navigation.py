@@ -4,6 +4,7 @@ from __future__ import division
 import math
 import time
 
+import numpy
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseStamped
@@ -199,8 +200,8 @@ class Navigation(object):
         # Break the path to subgoals every 2 pixels (1m = 20px)
         step = 1
         n_subgoals = int(len(self.path) / step)
-        self.subtargets = []
-        for i in range(0, n_subgoals):
+        self.subtargets = self.pick_first_subtarget(self.path[0], local_ogm)
+        for i in range(1, n_subgoals):
             self.subtargets.append(self.path[i * step])
         self.subtargets.append(self.path[-1])
         self.next_subtarget = 0
@@ -281,3 +282,31 @@ class Navigation(object):
             return linear, angular
         else:
             return 0, 0
+
+    @staticmethod
+    def pick_first_subtarget(original, ogm):
+        threshold = 50  # Hardcode it here to not be dependant on cost-based target selection settings.
+        step = 10
+
+        def surrounded(point):
+            cost = TargetSelection.topological_cost(point, ogm, threshold)
+            return cost < 6 * threshold
+
+        if not surrounded(original):
+            return [original]
+
+        def range_surround(dim):
+            start = original[dim]
+            return numpy.concatenate((
+                numpy.arange(start, start + threshold, step), numpy.arange(start - step, start - threshold, -step)
+            ), axis=0)
+
+        for x in range_surround(0):
+            for y in range_surround(1):
+                point = [x, y]
+                if not surrounded(point):
+                    Print.art_print("Picked new alternative 1st subtarget!", Print.BLUE)
+                    return [point, original]
+
+        Print.art_print("Failed to find good 1st subtarget!", Print.RED)
+        return [original]  # Failed to found one.
