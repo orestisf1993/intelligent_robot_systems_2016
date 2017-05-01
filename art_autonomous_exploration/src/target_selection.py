@@ -38,7 +38,7 @@ class TargetSelection(object):
         self.path_planning = PathPlanning()
 
     def method_is_cost_based(self):
-        return self.method == 'cost_based'
+        return self.method in ['cost_based', 'cost_based_fallback']
 
     # TODO: init_ogm -> ogm
     def selectTarget(self, init_ogm, coverage, robot_pose, origin, resolution, force_random=False):
@@ -94,8 +94,9 @@ class TargetSelection(object):
                     self.skeleton = skeleton
                     self.coverage = coverage
                     self.ogm = ogm
+                    self.brush = brush
                     # TODO: filter nodes elsewhere.
-                    self.nodes = [node for node in nodes if TargetSelection.is_good(node, ogm, coverage, brush)]
+                    self.nodes = [node for node in nodes if TargetSelection.is_good(brush, ogm, coverage, node)]
                     self.robot_px = [robot_pose['x_px'] - origin['x'] / resolution,
                                      robot_pose['y_px'] - origin['y'] / resolution]
                     self.theta = robot_pose['th']
@@ -121,9 +122,16 @@ class TargetSelection(object):
                 return x_rand, y_rand
 
     @staticmethod
-    def is_good(target, ogm, coverage, brush):
-        x, y = target
-        return ogm[x][y] < 50 and coverage[x][y] < 50 and brush[x][y] > 5
+    def is_good(brush, ogm, coverage, target=None):
+        """
+
+        :rtype: numpy.ndarray
+        """
+        if target is not None:
+            x, y = target
+            return ogm[x][y] < 50 and coverage[x][y] < 50 and brush[x][y] > 5
+        else:
+            return numpy.logical_and(numpy.logical_and(ogm < 50, coverage < 50), brush > 5)
 
     def select_by_cost(self, map_info):
         numpy.set_printoptions(precision=3, threshold=numpy.nan, suppress=True)  # TODO:del
@@ -149,8 +157,11 @@ class TargetSelection(object):
     def choose_best_nodes(self, map_info):
         # Since path planning takes a lot of time for many nodes we should reduce the possible result to the nodes
         # with the best distance and topological costs.
-        nodes = list(self.cluster_nodes(map_info.nodes, map_info.robot_px))
+        if self.method == 'cost_based_fallback':
+            yield self.closer_node(map_info), None, None
+            return
 
+        nodes = list(self.cluster_nodes(map_info.nodes, map_info.robot_px))
         topo_costs = [self._topological_cost(node, map_info.ogm) for node in nodes]
         best_nodes_idx = self.weight_costs(
             topo_costs,
@@ -167,9 +178,9 @@ class TargetSelection(object):
             if count == 7:  # TODO:configurable
                 break
         if count == 0:
-            Print.art_print("Failed to create any path. Falling back to random.", Print.RED)
-            self.method = 'random'
-            yield None, None, None
+            Print.art_print("Failed to create any path. Falling back to closer unoccupied.", Print.RED)
+            self.method = 'cost_based_fallback'
+            yield self.closer_node(map_info), None, None
 
     @staticmethod
     def cluster_nodes(nodes_original, robot_px):
@@ -193,6 +204,18 @@ class TargetSelection(object):
         else:
             weights = 2 ** numpy.arange(costs.shape[0] - 1, -1, -1)
         return numpy.average(costs, axis=0, weights=weights)
+
+    @staticmethod
+    def closer_node(map_info):
+        robot_px = numpy.array(map_info.robot_px)
+        nodes = numpy.array(numpy.where(TargetSelection.is_good(
+            numpy.array(map_info.brush),
+            numpy.array(map_info.ogm),
+            numpy.array(map_info.coverage),
+            target=None
+        ))).transpose()
+        closer_idx = numpy.linalg.norm(nodes - robot_px, axis=1).argmin()
+        return nodes[closer_idx]
 
     def _topological_cost(self, node, ogm):
         threshold = self.cost_based_properties['topo_threshold']
