@@ -457,3 +457,16 @@ crashlytics-build.properties
 fabric.properties
 
 .idea/
+
+
+#### cmake ####
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Makefile
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+
+catkin_generated/
+art_ogmpp/ogmpp_communications/cmake/
