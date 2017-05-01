@@ -77,6 +77,7 @@ class RobotController(object):
         scan = np.array(scan)
         theta = np.linspace(angle_min, angle_max, len(scan))
         d_virt = 0.2
+        scan[scan < d_virt] = d_virt + 0.01
         linear = -sum(np.cos(theta) / ((scan - d_virt) ** 2))
         angular = -sum(np.sin(theta) / ((scan - d_virt) ** 2))
         ##########################################################################
