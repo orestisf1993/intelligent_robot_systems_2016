@@ -88,6 +88,7 @@ class TargetSelection(object):
             target = self.selectRandomTarget(ogm, coverage, brush)
         elif self.method_is_cost_based():
             g_robot_pose = self.robot_perception.getGlobalCoordinates([robot_pose['x_px'], robot_pose['y_px']])
+            self.path_planning.setMap(self.robot_perception.getRosMap())
 
             class MapContainer:
                 def __init__(self):
