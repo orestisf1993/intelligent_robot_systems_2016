@@ -111,7 +111,7 @@ class RobotController(object):
             # Initialize robot to goal velocities.
             linear, angular = self.navigation.velocitiesToNextSubtarget()
             c_u = 0.00001
-            c_w = 0.0005
+            c_w = 0.00005
             ##########################################################################
         else:
             ############################### NOTE QUESTION ############################
