@@ -31,6 +31,7 @@ class RobotController(object):
 
         self.linear_velocity = 0
         self.angular_velocity = 0
+        self.stuck_count = 0
 
         # Check if the robot moves with target or just wanders
         self.move_with_target = rospy.get_param("calculate_target")
@@ -109,7 +110,7 @@ class RobotController(object):
             # Initialize robot to goal velocities.
             linear, angular = self.navigation.velocitiesToNextSubtarget()
             c_u = 0.00001
-            c_w = 0.00005
+            c_w = 0.0005
             ##########################################################################
         else:
             ############################### NOTE QUESTION ############################
@@ -129,11 +130,14 @@ class RobotController(object):
         linear = np.sign(linear) * min(self.MAX_LINEAR_VELOCITY, abs(linear))
 
         # Heuristic: If the robot is not moving rotate in the direction produced by the laser.
-        if abs(linear) + abs(angular) < (self.MAX_LINEAR_VELOCITY + self.MAX_ANGULAR_VELOCITY) / 2 / 6:
-            print("Robot was stuck so I set it's rotation speed.")
-            angular = self.MAX_ANGULAR_VELOCITY / 3 * np.sign(a_laser)
+        if self.stuck_count or (
+                        abs(linear) + abs(angular) < (self.MAX_LINEAR_VELOCITY + self.MAX_ANGULAR_VELOCITY) / 2 / 6):
+            print("Robot was stuck so I set it's speed {}.".format(self.stuck_count))
+            linear = self.MAX_LINEAR_VELOCITY * np.sign(l_laser) / 2
+            angular = self.MAX_ANGULAR_VELOCITY * np.sign(a_laser)
+            self.stuck_count = 0 if self.stuck_count >= 10 else self.stuck_count + 1  # TODO: configurable
 
-        assert angular <= self.MAX_ANGULAR_VELOCITY, "Angular speed larger than maximum allowed."
+        assert abs(angular) <= self.MAX_ANGULAR_VELOCITY, "Angular speed larger than maximum allowed."
         assert abs(linear) <= self.MAX_LINEAR_VELOCITY, "Linear speed larger than maximum allowed."
         self.angular_velocity = angular
         self.linear_velocity = linear
