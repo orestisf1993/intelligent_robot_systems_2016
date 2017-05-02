@@ -13,7 +13,7 @@ from scipy.spatial.distance import euclidean
 
 from brushfires import Brushfires
 from path_planning import PathPlanning
-from topology import Topology
+import topology
 from utilities import OgmOperations
 from utilities import Print
 from utilities import RvizHandler
@@ -34,7 +34,6 @@ class TargetSelection(object):
             self.cost_based_properties = rospy.get_param("cost_based_properties")
 
         self.brush = Brushfires()
-        self.topo = Topology()
         self.path_planning = PathPlanning()
 
     def method_is_cost_based(self):
@@ -60,12 +59,12 @@ class TargetSelection(object):
 
         # Calculate skeletonization
         tinit = time.time()
-        skeleton = self.topo.skeletonizationCffi(ogm, origin, resolution, ogm_limits)
+        skeleton = topology.skeletonizationCffi(ogm, origin, resolution, ogm_limits)
         Print.art_print("Skeletonization time: " + str(time.time() - tinit), Print.ORANGE)
 
         # Find topological graph
         tinit = time.time()
-        nodes = self.topo.topologicalNodes(ogm, skeleton, coverage, origin, resolution, brush, ogm_limits)
+        nodes = topology.topologicalNodes(ogm, skeleton, coverage, brush)
         Print.art_print("Topo nodes time: " + str(time.time() - tinit), Print.ORANGE)
 
         # Visualization of topological nodes
