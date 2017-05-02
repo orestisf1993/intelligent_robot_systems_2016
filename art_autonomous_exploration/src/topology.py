@@ -9,35 +9,15 @@ from utilities import RvizHandler
 
 
 def skeletonizationCffi(ogm, origin, resolution, ogml):
-    width = ogm.shape[0]  # TODO:remove
-    height = ogm.shape[1]
-
-    local = (ogm < 49).astype("int32")
-
-    skeleton = Cffi.thinning(local, ogml).astype("float64")
+    skeleton = (ogm < 49).astype("int32")
+    skeleton = Cffi.thinning(skeleton, ogml)
     skeleton = Cffi.prune(skeleton, ogml, 10)
 
-    viz = []
-    for i in range(0, width):
-        for j in range(0, height):
-            if skeleton[i][j] == 1:
-                viz.append([i * resolution + origin['x'], j * resolution + origin['y']])
-    RvizHandler.printMarker(
-        viz,
-        1,  # Type: Arrow
-        0,  # Action: Add
-        "map",  # Frame
-        "art_skeletonization_cffi",  # Namespace
-        [0.5, 0, 0, 0.5],  # Color RGBA
-        0.05  # Scale
-    )
+    print_viz(skeleton, resolution, origin['x'], origin['y'])
     return skeleton
 
 
 def skeletonization(self, ogm, origin, resolution, ogml):
-    width = ogm.shape[0]
-    height = ogm.shape[1]
-
     useful_ogm = ogm[ogml['min_x']:ogml['max_x'], ogml['min_y']:ogml['max_y']]
     useful_width = useful_ogm.shape[0]
     useful_height = useful_ogm.shape[1]
@@ -57,22 +37,7 @@ def skeletonization(self, ogm, origin, resolution, ogml):
     skeleton_final = numpy.zeros(ogm.shape)
     skeleton_final[ogml['min_x']:ogml['max_x'], ogml['min_y']:ogml['max_y']] = skeleton
 
-    viz = []
-    for i in range(0, width):
-        for j in range(0, height):
-            if skeleton_final[i][j] == 1:
-                viz.append([i * resolution + origin['x'], j * resolution + origin['y']])
-
-    RvizHandler.printMarker(
-        viz,
-        1,  # Type: Arrow
-        0,  # Action: Add
-        "map",  # Frame
-        "art_skeletonization",  # Namespace
-        [0.5, 0, 0, 0.5],  # Color RGBA
-        0.05  # Scale
-    )
-
+    print_viz(skeleton_final, resolution, origin['x'], origin['y'])
     return skeleton_final
 
 
@@ -126,3 +91,17 @@ def pruning(img, n):
                         tmp_img[i][j] = 0
         img = numpy.copy(tmp_img)
     return img
+
+
+def print_viz(skeleton, resolution, x, y):
+    i, j = numpy.where(skeleton == 1)
+    viz = zip(i * resolution + x, j * resolution + y)
+    RvizHandler.printMarker(
+        viz,
+        1,  # Type: Arrow
+        0,  # Action: Add
+        "map",  # Frame
+        "art_skeletonization",  # Namespace
+        [0.5, 0, 0, 0.5],  # Color RGBA
+        0.05  # Scale
+    )
