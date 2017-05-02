@@ -55,27 +55,16 @@ class Cffi(object):
 
     @staticmethod
     def thinning(skeleton, ogml):
-        x = [np.array(v, dtype='int32') for v in skeleton]
-        xi = ffi.new("int* [%d]" % (len(x)))
-        for i in range(len(x)):
-            xi[i] = ffi.cast("int *", x[i].ctypes.data)
+        xi, n, m = Cffi.to_double_pointer_copy(skeleton)
+        yi = ffi.cast('int*', skeleton.ctypes.data)
 
-        y = [np.array(v, dtype='int32') for v in skeleton]
-        yi = ffi.new("int* [%d]" % (len(y)))
-        for i in range(len(y)):
-            yi[i] = ffi.cast("int *", y[i].ctypes.data)
+        assert skeleton.flags["C_CONTIGUOUS"]
+        assert n == skeleton.shape[0]
+        assert m == skeleton.shape[1]
 
         itime = time.time()
-        # noinspection PyUnusedLocal
-        br_c = lib.thinning(xi, yi, len(x), len(x[0]), ogml['min_x'], ogml['max_x'], ogml['min_y'], ogml['max_y'])
-        Print.art_print("Pure skeletonization time: " + str(time.time() - itime), Print.BLUE)
-
-        # TODO: Must be faster!
-        itime = time.time()
-        for i in range(skeleton.shape[0]):
-            for j in range(skeleton.shape[1]):
-                skeleton[i][j] = yi[i][j]
-        Print.art_print("Skeletonization final copy: " + str(time.time() - itime), Print.BLUE)
+        lib.thinning(xi, yi, n, m, ogml['min_x'], ogml['max_x'], ogml['min_y'], ogml['max_y'])
+        Print.art_print("Thinning time: " + str(time.time() - itime), Print.BLUE)
         return skeleton
 
     @staticmethod
@@ -101,6 +90,14 @@ class Cffi(object):
                 skeleton[i][j] = yi[i][j]
         Print.art_print("Pruning time: " + str(time.time() - itime), Print.BLUE)
         return skeleton
+
+    @staticmethod
+    def to_double_pointer_copy(array):
+        x = [np.array(v, dtype='int32') for v in array]
+        xi = ffi.new("int* [%d]" % (len(x)))
+        for i in range(len(x)):
+            xi[i] = ffi.cast("int *", x[i].ctypes.data)
+        return xi, len(x), len(x[0])
 
 
 class OgmOperations(object):
