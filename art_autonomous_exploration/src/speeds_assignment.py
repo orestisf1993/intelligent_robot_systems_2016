@@ -14,6 +14,7 @@ from sonar_data_aggregator import SonarDataAggregator
 class RobotController(object):
     MAX_LINEAR_VELOCITY = rospy.get_param('max_linear_velocity')
     MAX_ANGULAR_VELOCITY = rospy.get_param('max_angular_velocity')
+    STUCK_LIMIT = rospy.get_param("stuck_limit")
 
     # Constructor
     def __init__(self):
@@ -111,7 +112,7 @@ class RobotController(object):
             # Initialize robot to goal velocities.
             linear, angular = self.navigation.velocitiesToNextSubtarget()
             c_u = 0.00001
-            c_w = 0.0005
+            c_w = 0.00005
             ##########################################################################
         else:
             ############################### NOTE QUESTION ############################
@@ -136,7 +137,7 @@ class RobotController(object):
             print("Robot was stuck so I set it's speed {}.".format(self.stuck_count))
             linear = self.MAX_LINEAR_VELOCITY * np.sign(l_laser) / 2
             angular = self.MAX_ANGULAR_VELOCITY * np.sign(a_laser)
-            self.stuck_count = 0 if self.stuck_count >= 10 else self.stuck_count + 1  # TODO: configurable
+            self.stuck_count = 0 if self.stuck_count >= self.STUCK_LIMIT else self.stuck_count + 1
 
         assert abs(angular) <= self.MAX_ANGULAR_VELOCITY, "Angular speed larger than maximum allowed."
         assert abs(linear) <= self.MAX_LINEAR_VELOCITY, "Linear speed larger than maximum allowed."

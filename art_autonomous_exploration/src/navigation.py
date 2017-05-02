@@ -89,10 +89,8 @@ class Navigation(object):
             self.robot_perception.origin['y'] / self.robot_perception.resolution
         ]
         ######################### NOTE: QUESTION  ##############################
-        # What if a later subtarget or the end has been reached before the
-        # next subtarget? Alter the code accordingly.
-        # Check if distance is less than 7 px (14 cm)
-        # Slice the list of subtargets and then reverse it.
+        # What if a later subtarget or the end has been reached before the next subtarget? Alter the code
+        # accordingly. Check if distance is less than 7 px (14 cm). Slice the list of subtargets and then reverse it.
         for idx, st in enumerate(self.subtargets[self.next_subtarget::][::-1]):
             # Right now, idx refers to the sliced & reversed array, fix it.
             idx = len(self.subtargets) - 1 - idx
@@ -105,7 +103,6 @@ class Navigation(object):
                     self.target_exists = False
                 break
         ########################################################################
-
         # Publish the current target
         if self.next_subtarget == len(self.subtargets):
             return
@@ -116,7 +113,6 @@ class Navigation(object):
             self.subtargets[self.next_subtarget][1] * self.robot_perception.resolution +
             self.robot_perception.origin['y']
         ]
-
         RvizHandler.printMarker(
             [subtarget],
             1,  # Type: Arrow

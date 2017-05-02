@@ -11,7 +11,7 @@ if __name__ == '__main__':
     # Wait for simulator and SLAM to initialize
     print "Waiting 5 seconds for initialization"
     time.sleep(5)
-    
+
     # Initializes the ROS node
     rospy.init_node('robot_controller')
     # Creates a RobotController object

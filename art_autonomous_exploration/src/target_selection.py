@@ -32,6 +32,7 @@ class TargetSelection(object):
             from robot_perception import RobotPerception
             self.robot_perception = RobotPerception()
             self.cost_based_properties = rospy.get_param("cost_based_properties")
+            numpy.set_printoptions(precision=3, threshold=numpy.nan, suppress=True)
 
         self.brush = Brushfires()
         self.topo = Topology()
@@ -40,18 +41,17 @@ class TargetSelection(object):
     def method_is_cost_based(self):
         return self.method in ['cost_based', 'cost_based_fallback']
 
-    # TODO: init_ogm -> ogm
-    def selectTarget(self, init_ogm, coverage, robot_pose, origin, resolution, force_random=False):
+    def selectTarget(self, ogm, coverage, robot_pose, origin, resolution, force_random=False):
         ######################### NOTE: QUESTION  ##############################
         # Implement a smart way to select the next target. You have the following tools: ogm_limits, Brushfire field,
         # OGM skeleton, topological nodes.
 
         # Find only the useful boundaries of OGM. Only there calculations
         # have meaning
-        ogm_limits = OgmOperations.findUsefulBoundaries(init_ogm, origin, resolution)
+        ogm_limits = OgmOperations.findUsefulBoundaries(ogm, origin, resolution)
 
         # Blur the OGM to erase discontinuities due to laser rays
-        ogm = OgmOperations.blurUnoccupiedOgm(init_ogm, ogm_limits)
+        ogm = OgmOperations.blurUnoccupiedOgm(ogm, ogm_limits)
 
         # Calculate Brushfire field
         tinit = time.time()
@@ -96,7 +96,6 @@ class TargetSelection(object):
                     self.coverage = coverage
                     self.ogm = ogm
                     self.brush = brush
-                    # TODO: filter nodes elsewhere.
                     self.nodes = [node for node in nodes if TargetSelection.is_good(brush, ogm, coverage, node)]
                     self.robot_px = [robot_pose['x_px'] - origin['x'] / resolution,
                                      robot_pose['y_px'] - origin['y'] / resolution]
@@ -135,7 +134,6 @@ class TargetSelection(object):
             return numpy.logical_and(numpy.logical_and(ogm < 50, coverage < 50), brush > 5)
 
     def select_by_cost(self, map_info):
-        numpy.set_printoptions(precision=3, threshold=numpy.nan, suppress=True)  # TODO:del
         nodes, paths, topo_costs = zip(*self.choose_best_nodes(map_info))
         if nodes[0] is None:  # choose_best_node's yield when no path is found will make nodes = (None,)
             return -1, -1
@@ -143,7 +141,6 @@ class TargetSelection(object):
             return nodes[0]
 
         best_path_idx = self.weight_costs(
-            # TODO: one for path in paths?
             topo_costs,
             [self.coverage_cost(path, map_info.coverage) for path in paths],  # Coverage
             [self.distance_cost(path, map_info.robot_px) for path in paths],  # Distance
@@ -162,7 +159,7 @@ class TargetSelection(object):
             yield self.closer_node(map_info), None, None
             return
 
-        nodes = list(self.cluster_nodes(map_info.nodes, map_info.robot_px))
+        nodes = list(self.cluster_nodes(map_info.nodes, map_info.robot_px, self.cost_based_properties['node_clusters']))
         topo_costs = [self._topological_cost(node, map_info.ogm) for node in nodes]
         best_nodes_idx = self.weight_costs(
             topo_costs,
@@ -176,7 +173,7 @@ class TargetSelection(object):
             if path:
                 count += 1
                 yield node, path, topo_costs[idx]
-            if count == 7:  # TODO:configurable
+            if count == self.cost_based_properties['max_paths']:
                 break
         if count == 0:
             Print.art_print("Failed to create any path. Falling back to closer unoccupied.", Print.RED)
@@ -184,10 +181,10 @@ class TargetSelection(object):
             yield self.closer_node(map_info), None, None
 
     @staticmethod
-    def cluster_nodes(nodes_original, robot_px):
+    def cluster_nodes(nodes_original, robot_px, n_clusters):
         Print.art_print("Trying to cluster:" + str(nodes_original), Print.BLUE)
         whitened = whiten(nodes_original)
-        _, cluster_idx = kmeans2(whitened, 10)  # TODO:#clusters configurable
+        _, cluster_idx = kmeans2(whitened, n_clusters)
         Print.art_print("Ended with clusters:" + str(cluster_idx), Print.BLUE)
 
         keyfun = lambda x: cluster_idx[x[0]]
@@ -199,7 +196,6 @@ class TargetSelection(object):
 
     def weight_costs(self, *cost_vectors, **kwargs):
         costs = self.normalize_costs(numpy.array(tuple(vector for vector in cost_vectors)))
-        Print.art_print("After normalize:\n" + str(costs), Print.BLUE)  # TODO:del
         if 'weights' in kwargs:
             weights = kwargs['weights']
         else:
@@ -277,8 +273,6 @@ class TargetSelection(object):
     @staticmethod
     def coverage_cost(path, coverage):
         coverage_sum = sum(coverage[x][y] for x, y in path)
-        # coverage_sum = max(0.01, coverage_sum)
-        # return 1 / coverage_sum
         return coverage_sum
 
     @staticmethod
@@ -286,6 +280,6 @@ class TargetSelection(object):
         """
         :rtype: numpy.ndarray
         """
-        Print.art_print("Before normalize:\n" + str(costs), Print.BLUE)  # TODO:del
+        Print.art_print("Costs before normalization:\n" + str(costs), Print.BLUE)
         assert (costs >= 0).all()
         return 1 - (costs.transpose() / numpy.abs(costs).max(axis=1)).transpose()

@@ -18,7 +18,7 @@ class RobotPerception:
 
     # Constructor
     def __init__(self):
-        
+
         # Flags for debugging and synchronization
         self.print_robot_pose = False
         self.have_map = False
@@ -41,11 +41,12 @@ class RobotPerception:
         # Holds the coverage information. This has the same size as the ogm
         # If a cell has the value of 0 it is uncovered
         # In the opposite case the cell's value will be 100
+        #TODO: sparse array
         self.coverage = []
 
         # Holds the resolution of the occupancy grid map
         self.resolution = 0.05
-        
+
         # Origin is the translation between the (0,0) of the robot pose and the
         # (0,0) of the map
         self.origin = {}
@@ -79,7 +80,7 @@ class RobotPerception:
 
         # ROS Subscriber to the occupancy grid map
         ogm_topic = rospy.get_param('ogm_topic')
-        rospy.Subscriber(ogm_topic, OccupancyGrid, self.readMap) 
+        rospy.Subscriber(ogm_topic, OccupancyGrid, self.readMap)
 
         # Publisher of the robot trajectory
         robot_trajectory_topic = rospy.get_param('robot_trajectory_topic')
@@ -90,7 +91,7 @@ class RobotPerception:
         coverage_pub_topic = rospy.get_param('coverage_pub_topic')
         self.coverage_publisher = rospy.Publisher(coverage_pub_topic, \
             OccupancyGrid, queue_size = 10)
-        
+
         # Read Cell size
         self.cell_size = rospy.get_param('cell_size')
         self.cell_matrix = numpy.zeros((1,1))
@@ -177,11 +178,11 @@ class RobotPerception:
         self.ros_ogm = data
         # Reading the map pixels
         self.ogm_info = data.info
-        
+
         if self.have_map == False or \
                 self.ogm_info.width != self.prev_ogm_info.width or \
                 self.ogm_info.height != self.prev_ogm_info.height:
-            
+
             self.ogm = numpy.zeros((data.info.width, data.info.height), \
                     dtype = numpy.int)
             Print.art_print("Map & coverage expansion!", Print.GREEN)
