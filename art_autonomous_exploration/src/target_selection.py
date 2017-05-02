@@ -45,8 +45,7 @@ class TargetSelection(object):
         # Implement a smart way to select the next target. You have the following tools: ogm_limits, Brushfire field,
         # OGM skeleton, topological nodes.
 
-        # Find only the useful boundaries of OGM. Only there calculations
-        # have meaning
+        # Find only the useful boundaries of OGM. Only there calculations have meaning.
         ogm_limits = OgmOperations.findUsefulBoundaries(ogm, origin, resolution)
 
         # Blur the OGM to erase discontinuities due to laser rays

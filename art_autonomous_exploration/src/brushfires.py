@@ -11,8 +11,9 @@ class Brushfires(object):
         pass
 
     def obstaclesBrushfireCffi(self, ogm, ogm_limits):
-        brush = numpy.full(ogm.shape, -1)
+        brush = numpy.full(ogm.shape, -1, dtype='int32')
 
+        #TODO: improve
         for i in range(ogm_limits['min_x'], ogm_limits['max_x'] - 1):
             for j in range(ogm_limits['min_y'], ogm_limits['max_y'] - 1):
                 if ogm[i][j] > 49 or ogm[i][j] == -1:

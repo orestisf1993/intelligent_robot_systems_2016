@@ -33,24 +33,12 @@ class Cffi(object):
 
     @staticmethod
     def brushfireFromObstacles(ogm, brush, ogml):
-        # TODO improve: by map limits
-        x = [np.array(v, dtype='int32') for v in ogm]
-        xi = ffi.new("int* [%d]" % (len(x)))
-        for i in range(len(x)):
-            xi[i] = ffi.cast("int *", x[i].ctypes.data)
+        assert brush.flags["C_CONTIGUOUS"]
 
-        y = [np.array(v, dtype='int32') for v in brush]
-        yi = ffi.new("int* [%d]" % (len(y)))
-        for i in range(len(y)):
-            yi[i] = ffi.cast("int *", y[i].ctypes.data)
+        xi, n, m = Cffi.to_double_pointer_copy(ogm)
+        yi = ffi.cast('int*', brush.ctypes.data)
 
-        # noinspection PyUnusedLocal
-        br_c = lib.brushfireFromObstacles(xi, yi, len(x), len(x[0]), ogml['min_x'], ogml['max_x'], ogml['min_y'],
-                                          ogml['max_y'])
-        # TODO: Must be faster!
-        for i in range(ogm.shape[0]):
-            for j in range(ogm.shape[1]):
-                brush[i][j] = yi[i][j]
+        lib.brushfireFromObstacles(xi, yi, n, m, ogml['min_x'], ogml['max_x'], ogml['min_y'], ogml['max_y'])
         return brush
 
     @staticmethod

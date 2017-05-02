@@ -4,7 +4,7 @@ from cffi import FFI
 
 ffi = FFI()
 
-ffi.cdef("void brushfireFromObstacles(int ** input, int ** output, int width, int height, int min_x, int max_x, int min_y, int max_y);")
+ffi.cdef("void brushfireFromObstacles(int ** input, int * output, int width, int height, int min_x, int max_x, int min_y, int max_y);")
 ffi.cdef("void thinning(int ** input, int * output, int width, int height, int min_x, int max_x, int min_y, int max_y);")
 ffi.cdef("void prune(int ** input, int * output, int width, int height, int min_x, int max_x, int min_y, int max_y, int iterations);")
 
@@ -22,8 +22,7 @@ ffi.set_source("_cpp_functions",
             return out_2d;
         }
 
-
-        static void brushfireFromObstacles(int ** input, int ** output, int width, int height,
+        static void brushfireFromObstacles_(int ** input, int ** output, int width, int height,
             int min_x, int max_x, int min_y, int max_y)
         {
             int i = 0;
@@ -58,6 +57,13 @@ ffi.set_source("_cpp_functions",
                 }
                 step = step + 1;
             }
+        }
+
+        static void brushfireFromObstacles(int ** in, int * out, int n, int m, int min_x, int max_x, int min_y, int max_y)
+        {
+            int ** out_2d = continuous_to_2D(out, n, m);
+            brushfireFromObstacles_(in, out_2d, n, m, min_x, max_x, min_y, max_y);
+            free(out_2d);
         }
 
         static void thinning_(int ** in, int ** out, int width, int height, int min_x, int max_x, int min_y, int max_y)
