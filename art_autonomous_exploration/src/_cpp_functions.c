@@ -317,9 +317,9 @@ static int search_in_struct_unions(const struct _cffi_type_context_s *ctx,
 #define _cffi_to_c_char                                                  \
                  ((int(*)(PyObject *))_cffi_exports[9])
 #define _cffi_from_c_pointer                                             \
-    ((PyObject *(*)(char *, CTypeDescrObject *))_cffi_exports[10])
+    ((PyObject *(*)(char *, struct _cffi_ctypedescr *))_cffi_exports[10])
 #define _cffi_to_c_pointer                                               \
-    ((char *(*)(PyObject *, CTypeDescrObject *))_cffi_exports[11])
+    ((char *(*)(PyObject *, struct _cffi_ctypedescr *))_cffi_exports[11])
 #define _cffi_get_struct_layout                                          \
     not used any more
 #define _cffi_restore_errno                                              \
@@ -329,11 +329,11 @@ static int search_in_struct_unions(const struct _cffi_type_context_s *ctx,
 #define _cffi_from_c_char                                                \
     ((PyObject *(*)(char))_cffi_exports[15])
 #define _cffi_from_c_deref                                               \
-    ((PyObject *(*)(char *, CTypeDescrObject *))_cffi_exports[16])
+    ((PyObject *(*)(char *, struct _cffi_ctypedescr *))_cffi_exports[16])
 #define _cffi_to_c                                                       \
-    ((int(*)(char *, CTypeDescrObject *, PyObject *))_cffi_exports[17])
+    ((int(*)(char *, struct _cffi_ctypedescr *, PyObject *))_cffi_exports[17])
 #define _cffi_from_c_struct                                              \
-    ((PyObject *(*)(char *, CTypeDescrObject *))_cffi_exports[18])
+    ((PyObject *(*)(char *, struct _cffi_ctypedescr *))_cffi_exports[18])
 #define _cffi_to_c_wchar_t                                               \
     ((wchar_t(*)(PyObject *))_cffi_exports[19])
 #define _cffi_from_c_wchar_t                                             \
@@ -343,21 +343,22 @@ static int search_in_struct_unions(const struct _cffi_type_context_s *ctx,
 #define _cffi_to_c__Bool                                                 \
     ((_Bool(*)(PyObject *))_cffi_exports[22])
 #define _cffi_prepare_pointer_call_argument                              \
-    ((Py_ssize_t(*)(CTypeDescrObject *, PyObject *, char **))_cffi_exports[23])
+    ((Py_ssize_t(*)(struct _cffi_ctypedescr *,                           \
+                    PyObject *, char **))_cffi_exports[23])
 #define _cffi_convert_array_from_object                                  \
-    ((int(*)(char *, CTypeDescrObject *, PyObject *))_cffi_exports[24])
+    ((int(*)(char *, struct _cffi_ctypedescr *, PyObject *))_cffi_exports[24])
 #define _CFFI_CPIDX  25
 #define _cffi_call_python                                                \
     ((void(*)(struct _cffi_externpy_s *, char *))_cffi_exports[_CFFI_CPIDX])
 #define _CFFI_NUM_EXPORTS 26
 
-typedef struct _ctypedescr CTypeDescrObject;
+struct _cffi_ctypedescr;
 
 static void *_cffi_exports[_CFFI_NUM_EXPORTS];
 
 #define _cffi_type(index)   (                           \
     assert((((uintptr_t)_cffi_types[index]) & 1) == 0), \
-    (CTypeDescrObject *)_cffi_types[index])
+    (struct _cffi_ctypedescr *)_cffi_types[index])
 
 static PyObject *_cffi_init(const char *module_name, Py_ssize_t version,
                             const struct _cffi_type_context_s *ctx)
@@ -430,7 +431,18 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
 /************************************************************/
 
 
-        #include <stdio.h>
+        #include <stdlib.h>
+
+        static int ** continuous_to_2D(int * old, int n, int m){
+            int ** out_2d = malloc(n * sizeof(int*));
+            int i;
+
+            for (i = 0; i < n; i++){
+                out_2d[i] = &old[i * m];
+            }
+            return out_2d;
+        }
+
 
         static void brushfireFromObstacles(int ** input, int ** output, int width, int height,
             int min_x, int max_x, int min_y, int max_y)
@@ -469,7 +481,7 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
             }
         }
 
-        static void thinning(int ** in, int ** out, int width, int height, int min_x, int max_x, int min_y, int max_y)
+        static void thinning_(int ** in, int ** out, int width, int height, int min_x, int max_x, int min_y, int max_y)
         {
             int i, j, steps = 0;
             char changed = 1;
@@ -658,7 +670,14 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
             } // END WHILE
         }
 
-        static void prune(int ** in, int ** out, int width, int height, int min_x, int max_x, int min_y, int max_y, int iterations)
+        static void thinning(int ** in, int * out, int n, int m, int min_x, int max_x, int min_y, int max_y)
+        {
+            int ** out_2d = continuous_to_2D(out, n, m);
+            thinning_(in, out_2d, n, m, min_x, max_x, min_y, max_y);
+            free(out_2d);
+        }
+
+        static void prune_(int ** in, int ** out, int width, int height, int min_x, int max_x, int min_y, int max_y, int iterations)
         {
             int i, j, steps = 0;
             int sum;
@@ -673,9 +692,9 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
                 {
                     for(j = min_y ; j < max_y - 1 ; j = j + 1)
                     {
-                        sum = 
-                            in[i-1][j-1] + in[i-1][j] + in[i-1][j+1] +    
-                            in[i][j-1] + in[i][j] + in[i][j+1] +    
+                        sum =
+                            in[i-1][j-1] + in[i-1][j] + in[i-1][j+1] +
+                            in[i][j-1] + in[i][j] + in[i][j+1] +
                             in[i+1][j-1] + in[i+1][j] + in[i+1][j+1];
                         if(sum == 2)
                         {
@@ -686,13 +705,20 @@ static void (*_cffi_call_python_org)(struct _cffi_externpy_s *, char *);
             }
         }
 
+        static void prune(int ** in, int * out, int n, int m, int min_x, int max_x, int min_y, int max_y, int iterations)
+        {
+            int ** out_2d = continuous_to_2D(out, n, m);
+            prune_(in, out_2d, n, m, min_x, max_x, min_y, max_y, iterations);
+            free(out_2d);
+        }
+
     
 
 /************************************************************/
 
 static void *_cffi_types[] = {
-/*  0 */ _CFFI_OP(_CFFI_OP_FUNCTION, 22), // void()(int * *, int * *, int, int, int, int, int, int)
-/*  1 */ _CFFI_OP(_CFFI_OP_POINTER, 21), // int * *
+/*  0 */ _CFFI_OP(_CFFI_OP_FUNCTION, 31), // void()(int * *, int * *, int, int, int, int, int, int)
+/*  1 */ _CFFI_OP(_CFFI_OP_POINTER, 12), // int * *
 /*  2 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
 /*  3 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7), // int
 /*  4 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
@@ -701,19 +727,28 @@ static void *_cffi_types[] = {
 /*  7 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /*  8 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /*  9 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
-/* 10 */ _CFFI_OP(_CFFI_OP_FUNCTION, 22), // void()(int * *, int * *, int, int, int, int, int, int, int)
+/* 10 */ _CFFI_OP(_CFFI_OP_FUNCTION, 31), // void()(int * *, int *, int, int, int, int, int, int)
 /* 11 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
-/* 12 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
+/* 12 */ _CFFI_OP(_CFFI_OP_POINTER, 3), // int *
 /* 13 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /* 14 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /* 15 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /* 16 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /* 17 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
 /* 18 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
-/* 19 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
-/* 20 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
-/* 21 */ _CFFI_OP(_CFFI_OP_POINTER, 3), // int *
-/* 22 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 0), // void
+/* 19 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
+/* 20 */ _CFFI_OP(_CFFI_OP_FUNCTION, 31), // void()(int * *, int *, int, int, int, int, int, int, int)
+/* 21 */ _CFFI_OP(_CFFI_OP_NOOP, 1),
+/* 22 */ _CFFI_OP(_CFFI_OP_NOOP, 12),
+/* 23 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 24 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 25 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 26 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 27 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 28 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 29 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 7),
+/* 30 */ _CFFI_OP(_CFFI_OP_FUNCTION_END, 0),
+/* 31 */ _CFFI_OP(_CFFI_OP_PRIMITIVE, 0), // void
 };
 
 static void _cffi_d_brushfireFromObstacles(int * * x0, int * * x1, int x2, int x3, int x4, int x5, int x6, int x7)
@@ -805,7 +840,7 @@ _cffi_f_brushfireFromObstacles(PyObject *self, PyObject *args)
 #  define _cffi_f_brushfireFromObstacles _cffi_d_brushfireFromObstacles
 #endif
 
-static void _cffi_d_prune(int * * x0, int * * x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8)
+static void _cffi_d_prune(int * * x0, int * x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8)
 {
   prune(x0, x1, x2, x3, x4, x5, x6, x7, x8);
 }
@@ -814,7 +849,7 @@ static PyObject *
 _cffi_f_prune(PyObject *self, PyObject *args)
 {
   int * * x0;
-  int * * x1;
+  int * x1;
   int x2;
   int x3;
   int x4;
@@ -848,13 +883,13 @@ _cffi_f_prune(PyObject *self, PyObject *args)
   }
 
   datasize = _cffi_prepare_pointer_call_argument(
-      _cffi_type(1), arg1, (char **)&x1);
+      _cffi_type(12), arg1, (char **)&x1);
   if (datasize != 0) {
     if (datasize < 0)
       return NULL;
-    x1 = (int * *)alloca((size_t)datasize);
+    x1 = (int *)alloca((size_t)datasize);
     memset((void *)x1, 0, (size_t)datasize);
-    if (_cffi_convert_array_from_object((char *)x1, _cffi_type(1), arg1) < 0)
+    if (_cffi_convert_array_from_object((char *)x1, _cffi_type(12), arg1) < 0)
       return NULL;
   }
 
@@ -900,7 +935,7 @@ _cffi_f_prune(PyObject *self, PyObject *args)
 #  define _cffi_f_prune _cffi_d_prune
 #endif
 
-static void _cffi_d_thinning(int * * x0, int * * x1, int x2, int x3, int x4, int x5, int x6, int x7)
+static void _cffi_d_thinning(int * * x0, int * x1, int x2, int x3, int x4, int x5, int x6, int x7)
 {
   thinning(x0, x1, x2, x3, x4, x5, x6, x7);
 }
@@ -909,7 +944,7 @@ static PyObject *
 _cffi_f_thinning(PyObject *self, PyObject *args)
 {
   int * * x0;
-  int * * x1;
+  int * x1;
   int x2;
   int x3;
   int x4;
@@ -941,13 +976,13 @@ _cffi_f_thinning(PyObject *self, PyObject *args)
   }
 
   datasize = _cffi_prepare_pointer_call_argument(
-      _cffi_type(1), arg1, (char **)&x1);
+      _cffi_type(12), arg1, (char **)&x1);
   if (datasize != 0) {
     if (datasize < 0)
       return NULL;
-    x1 = (int * *)alloca((size_t)datasize);
+    x1 = (int *)alloca((size_t)datasize);
     memset((void *)x1, 0, (size_t)datasize);
-    if (_cffi_convert_array_from_object((char *)x1, _cffi_type(1), arg1) < 0)
+    if (_cffi_convert_array_from_object((char *)x1, _cffi_type(12), arg1) < 0)
       return NULL;
   }
 
@@ -991,8 +1026,8 @@ _cffi_f_thinning(PyObject *self, PyObject *args)
 
 static const struct _cffi_global_s _cffi_globals[] = {
   { "brushfireFromObstacles", (void *)_cffi_f_brushfireFromObstacles, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 0), (void *)_cffi_d_brushfireFromObstacles },
-  { "prune", (void *)_cffi_f_prune, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 10), (void *)_cffi_d_prune },
-  { "thinning", (void *)_cffi_f_thinning, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 0), (void *)_cffi_d_thinning },
+  { "prune", (void *)_cffi_f_prune, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 20), (void *)_cffi_d_prune },
+  { "thinning", (void *)_cffi_f_thinning, _CFFI_OP(_CFFI_OP_CPYTHON_BLTN_V, 10), (void *)_cffi_d_thinning },
 };
 
 static const struct _cffi_type_context_s _cffi_type_context = {
@@ -1007,9 +1042,13 @@ static const struct _cffi_type_context_s _cffi_type_context = {
   0,  /* num_enums */
   0,  /* num_typenames */
   NULL,  /* no includes */
-  23,  /* num_types */
+  32,  /* num_types */
   0,  /* flags */
 };
+
+#ifdef __GNUC__
+#  pragma GCC visibility push(default)  /* for -fvisibility= */
+#endif
 
 #ifdef PYPY_VERSION
 PyMODINIT_FUNC
@@ -1038,4 +1077,8 @@ init_cpp_functions(void)
 {
   _cffi_init("_cpp_functions", 0x2601, &_cffi_type_context);
 }
+#endif
+
+#ifdef __GNUC__
+#  pragma GCC visibility pop
 #endif

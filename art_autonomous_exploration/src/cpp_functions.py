@@ -5,12 +5,23 @@ from cffi import FFI
 ffi = FFI()
 
 ffi.cdef("void brushfireFromObstacles(int ** input, int ** output, int width, int height, int min_x, int max_x, int min_y, int max_y);")
-ffi.cdef("void thinning(int ** input, int ** output, int width, int height, int min_x, int max_x, int min_y, int max_y);")
-ffi.cdef("void prune(int ** input, int ** output, int width, int height, int min_x, int max_x, int min_y, int max_y, int iterations);")
+ffi.cdef("void thinning(int ** input, int * output, int width, int height, int min_x, int max_x, int min_y, int max_y);")
+ffi.cdef("void prune(int ** input, int * output, int width, int height, int min_x, int max_x, int min_y, int max_y, int iterations);")
 
 ffi.set_source("_cpp_functions",
-    """
-        #include <stdio.h>
+    r"""
+        #include <stdlib.h>
+
+        static int ** continuous_to_2D(int * old, int n, int m){
+            int ** out_2d = malloc(n * sizeof(int*));
+            int i;
+
+            for (i = 0; i < n; i++){
+                out_2d[i] = &old[i * m];
+            }
+            return out_2d;
+        }
+
 
         static void brushfireFromObstacles(int ** input, int ** output, int width, int height,
             int min_x, int max_x, int min_y, int max_y)
@@ -49,7 +60,7 @@ ffi.set_source("_cpp_functions",
             }
         }
 
-        static void thinning(int ** in, int ** out, int width, int height, int min_x, int max_x, int min_y, int max_y)
+        static void thinning_(int ** in, int ** out, int width, int height, int min_x, int max_x, int min_y, int max_y)
         {
             int i, j, steps = 0;
             char changed = 1;
@@ -238,7 +249,14 @@ ffi.set_source("_cpp_functions",
             } // END WHILE
         }
 
-        static void prune(int ** in, int ** out, int width, int height, int min_x, int max_x, int min_y, int max_y, int iterations)
+        static void thinning(int ** in, int * out, int n, int m, int min_x, int max_x, int min_y, int max_y)
+        {
+            int ** out_2d = continuous_to_2D(out, n, m);
+            thinning_(in, out_2d, n, m, min_x, max_x, min_y, max_y);
+            free(out_2d);
+        }
+
+        static void prune_(int ** in, int ** out, int width, int height, int min_x, int max_x, int min_y, int max_y, int iterations)
         {
             int i, j, steps = 0;
             int sum;
@@ -264,6 +282,13 @@ ffi.set_source("_cpp_functions",
                     }
                 }
             }
+        }
+
+        static void prune(int ** in, int * out, int n, int m, int min_x, int max_x, int min_y, int max_y, int iterations)
+        {
+            int ** out_2d = continuous_to_2D(out, n, m);
+            prune_(in, out_2d, n, m, min_x, max_x, min_y, max_y, iterations);
+            free(out_2d);
         }
 
     """)
