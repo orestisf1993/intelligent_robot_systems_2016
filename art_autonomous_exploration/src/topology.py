@@ -9,16 +9,12 @@ from utilities import RvizHandler
 
 
 def skeletonizationCffi(ogm, origin, resolution, ogml):
-    width = ogm.shape[0]
+    width = ogm.shape[0]  # TODO:remove
     height = ogm.shape[1]
 
-    local = numpy.zeros(ogm.shape)
-    for i in range(0, width):
-        for j in range(0, height):
-            if ogm[i][j] < 49:
-                local[i][j] = 1
+    local = (ogm < 49).astype("int32")
 
-    skeleton = Cffi.thinning(local, ogml)
+    skeleton = Cffi.thinning(local, ogml).astype("float64")
     skeleton = Cffi.prune(skeleton, ogml, 10)
 
     viz = []
