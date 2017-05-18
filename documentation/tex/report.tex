@@ -2,12 +2,16 @@
 \input{preamble}
 \DeclareMathOperator{\atantwo}{atan2}
 \DeclareMathOperator{\sign}{sign}
+\makeatletter
+% Hide section numbers
+\renewcommand{\@seccntformat}[1]{}
+\makeatother
 
 \subject{Ευφυή Συστήματα Ρομπότ}
 \title{Εργασία 2016-2017}
 \subtitle{\mytoptext\\\centering\includegraphics[width=0.29\textwidth]{university}}
-\author{
-    Ορέστης Φλώρος-Μαλιβίτσης - 7796\\ \texttt{\href{mailto:orestisf@ece.auth.gr}{orestisf@ece.auth.gr}}
+\author{%
+    Ορέστης Φλώρος-Μαλιβίτσης - 7796\\ \texttt{\href{mailto:orestisf@ece.auth.gr}{orestisf@ece.auth.gr}}%
 }
 \date{\today}
 
@@ -21,6 +25,8 @@
 %\clearpage
 \setcounter{page}{1}
 \setcounter{section}{-1}
+\nocite{etsardou-phd}
+\nocite{tsardoulias2016cost}
 \input{intro}
 \input{ex1}
 \input{ex2}
