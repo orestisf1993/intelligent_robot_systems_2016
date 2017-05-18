@@ -52,7 +52,8 @@
 \setminted{%
     autogobble=true,%
     breaklines=true,%
-    frame=none,%
+    frame=single,%
+    framerule=2pt,%
     linenos=false%
 }
 \setcounter{tocdepth}{3} % subsub has numbers
@@ -78,13 +79,14 @@
 % http://stackoverflow.com/a/21251925/3430986
 \usepackage{caption}
 % Change the caption name for listing / code enviroment.
-\captionsetup[listing]{name=Αλγόριθμος}
+\captionsetup[listing]{name=Καταχώρηση}
 % And list of listings.
 % ftp://ftp.dante.de/tex-archive/macros/latex/contrib/minted/minted.pdf
-\SetupFloatingEnvironment{listing}{listname=Κατάλογος Αλγορίθμων}
+\SetupFloatingEnvironment{listing}{listname=Κατάλογος Καταχωρήσεων}
 % Define code enviroment for captions and whatnot.
 \newenvironment{code}{\captionsetup{type=listing}\center}{\endcenter}
 \newminted{python}{frame=single,framerule=2pt}
+\newminted{C}{frame=single,framerule=2pt}
 
 % Extra argument for the enumerate enviroment.
 % http://ctan.org/pkg/enumerate
