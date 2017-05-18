@@ -1,4 +1,4 @@
-\section{Challenge 2}
+\section{Challenge 2: Απεικόνιση διαδρομής}\label{section:ex2}
 Σε αυτό το κομμάτι καλούμαστε να μεταφέρουμε τις συντεταγμένες από το pose του ρομπότ στο σύστημα συντεταγμένων που χρησιμοποιεί το RViz.
 Σαν pose αναφερόμαστε στον συνδυασμό της θέσης (position) και προσανατολισμού (orientation)~\cite{shapiro2001computer}.
 
@@ -20,7 +20,7 @@ resolution & 0 \\
 \end{bmatrix}$ και $\mathbf{c_0} = origin$.
 Σε κώδικα:
 \begin{code}
-\caption{Challenge 2: Μεταφορά συστήματος συντεταγμένων}
+\caption{Μεταφορά συστήματος συντεταγμένων}
 \begin{pythoncode}
 ps.pose.position.x = p[0] * self.robot_perception.resolution + self.robot_perception.origin['x']
 ps.pose.position.y = p[1] * self.robot_perception.resolution + self.robot_perception.origin['y']
