@@ -11,9 +11,9 @@ import rospy
 from scipy.cluster.vq import kmeans2, whiten
 from scipy.spatial.distance import euclidean
 
+import topology
 from brushfires import Brushfires
 from path_planning import PathPlanning
-import topology
 from utilities import OgmOperations
 from utilities import Print
 from utilities import RvizHandler
@@ -140,8 +140,8 @@ class TargetSelection(object):
 
         best_path_idx = self.weight_costs(
             topo_costs,
-            [self.coverage_cost(path, map_info.coverage) for path in paths],  # Coverage
             [self.distance_cost(path, map_info.robot_px) for path in paths],  # Distance
+            [self.coverage_cost(path, map_info.coverage) for path in paths],  # Coverage
             [self.rotation_cost(path, map_info.robot_px, map_info.theta) for path in paths]  # Rotational
         ).argmax()
         assert paths[best_path_idx]
@@ -244,7 +244,7 @@ class TargetSelection(object):
         return sum(weighted_distances)
 
     @staticmethod
-    def distance_coeff(node, robot_px, s=100, epsilon=0.0001):
+    def distance_coeff(node, robot_px, s=30, epsilon=0.0001):
         x_n, y_n = node
         x_g, y_g = robot_px
         coeff = 1 - math.exp(-((x_n - x_g) ** 2 / (2 * s ** 2) + (y_n - y_g) ** 2 / (2 * s ** 2))) + epsilon
