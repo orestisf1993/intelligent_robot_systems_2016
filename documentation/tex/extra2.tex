@@ -1,0 +1,99 @@
+\section{Extra Challenge 2: Βελτίωση υπολογισμών στο target selection}
+Στα πλαίσια αυτού του στόχου πραγματοποιήθηκαν διάφορες αλλαγές που αποσκοπούν στη βελτίωση της απόδοσης των υπολογισμών που σχετίζονται με τις λειτουργίες του αρχείου
+\path{./art_autonomous_exploration/src/target_selection.py}.
+Το σύνολο των αλλαγών που πραγματοποιήθηκαν μπορούν να βρεθούν με την εντολή:\\
+%\mintinline{bash}!git diff -w acc7a81 "8e1cf67^1" -- art_autonomous_exploration/src/*.py!%TODO: check
+\mintinline{bash}!git diff acc7a81 aa93f0c^1 -- art_autonomous_exploration/src/*.py!
+
+Το πρώτο πρόβλημα που αντιμετωπίστηκε είναι αυτό της τελικής αντιγραφής των
+αντικειμένων
+\href{https://github.com/etsardou/intelligent_robot_systems_2016/blob/bc7bfee96e5598edc83a6bcadaaef982c2a398aa/art_autonomous_exploration/src/utilities.py#L44}{\mintinline{python}!brush!},
+\href{https://github.com/etsardou/intelligent_robot_systems_2016/blob/bc7bfee96e5598edc83a6bcadaaef982c2a398aa/art_autonomous_exploration/src/utilities.py#L67}{\mintinline{python}!skeleton!} και
+\href{https://github.com/etsardou/intelligent_robot_systems_2016/blob/bc7bfee96e5598edc83a6bcadaaef982c2a398aa/art_autonomous_exploration/src/utilities.py#L91}{\mintinline{python}!skeleton!}
+στις συναρτήσεις
+\mintinline{python}!brushfireFromObstacles()!,
+\mintinline{python}!thinning()! και
+\mintinline{python}!prune()!
+της κλάσης
+\mintinline{python}!Cffi!
+στο αρχείο
+\path{./art_autonomous_exploration/src/utilities.py}.
+Τα αντικείμενα \mintinline{python}!ndarray! της \mintinline{python}!numpy! βιβλιοθήκης αποθηκεύονται σε ``C order'' ή ``row-major order''.
+Δηλαδή, ένας δισδιάστατος πίνακας όπως αυτοί παραπάνω αποθηκεύεται σαν μονοδιάστατος, σε συνεχόμενες θέσης μνήμης.
+
+\sloppy Ωστόσο, στο αρχείο
+\path{./art_autonomous_exploration/src/cpp_functions.py}
+που ορίζει τις συναρτήσεις γραμμένες σε κώδικα C χρησιμοποιούνται δισδιάστατοι πίνακες σε μορφή \mintinline{C}!int ** out!.
+Για αυτό το λόγο η μεταφορά του numpy array σε δισδιάστατο πίνακα γίνεται ως εξής:
+\begin{code}
+\caption{Μεταφορά numpy array σε ffi}
+\begin{pythoncode}
+x = [np.array(v, dtype='int32') for v in array]
+xi = ffi.new("int* [%d]" % (len(x)))
+for i in range(len(x)):
+    xi[i] = ffi.cast("int *", x[i].ctypes.data)
+n = len(x)
+m = len(x[0])
+\end{pythoncode}
+\end{code}
+Για τον πίνακα \mintinline{C}!int ** input! των συναρτήσεων αυτό δε μας πειράζει αφού θέλουμε ούτως ή άλλως να αντιγράψουμε τα δεδομένα του \mintinline{python}!array!.
+Ωστόσο, θα μπορούσαμε να αποφύγουμε την αντιγραφή του πίνακα \mintinline{C}!int ** output! στο \mintinline{python}!array!.
+
+\sloppy Μια καλή προσέγγιση θα ήταν να ξαναγραφεί ο κώδικας των
+\mintinline{C}!brushfireFromObstacles()!,
+\mintinline{C}!thinning()! και
+\mintinline{C}!prune()!
+ώστε να δέχεται μονοδιάστατους πίνακες ως ορίσματα και να πραγματοποιεί την προσπέλασή τους με row major order.
+Ένας πιο απλός τρόπος που δεν απαιτεί την αλλαγή ολόκληρου του κώδικα είναι η δημιουργία μιας συνάρτησης που παίρνει σαν όρισμα έναν μονοδιάστατο πίνακα κατευθείαν μέσω \mintinline{python}!array.ctypes.data!
+και τον μετατρέπει σε δισδιάστατο (διπλό pointer) πίνακα χωρίς να πραγματοποιεί αντιγραφές.
+\begin{code}
+\caption{Μετατροπή μονοδιάστατου σε δισδιάστατου}
+\begin{Ccode}
+static int ** continuous_to_2D(int * old, int n, int m){
+    int ** out_2d = malloc(n * sizeof(int*));
+    int i;
+
+    for (i = 0; i < n; i++){
+        out_2d[i] = &old[i * m];
+    }
+    return out_2d;
+}
+\end{Ccode}
+\end{code}
+Με αυτό το τρόπο το \mintinline{C}!out_2d[i][j]! έχει την ίδια διεύθυνση στη μνήμη με το \mintinline{C}!old[i + m*j]! και το \mintinline{python}!array[i][j]! του αρχικού πίνακα numpy.
+
+Στη συνέχεια, βελτιώθηκαν μερικοί υπολογισμοί πινάκων με χρήση της numpy~\cite{numpy}.
+Στο \path{./art_autonomous_exploration/src/topology.py} οι αλλαγές για τον υπολογισμό της μεταβλητής \mintinline{python}!local! φαίνονται στη~\ref{lst:local}.
+Επίσης, στη καταχώρηση~\ref{lst:viz},
+η μεταβλητή \mintinline{python}!viz! και η κλήση της \mintinline{python}!RvizHandler.printMarker! μεταφέρθηκαν στη συνάρτηση \mintinline{python}!print_viz()! %TODO: name?
+και βελτιώθηκε ο χρόνος υπολογισμού.
+
+\begin{code}
+\caption{Γρηγορότερος υπολογισμός skeleton πριν το thinning και pruning}\label{lst:local}
+\begin{pythoncode}
+-    local = numpy.zeros(ogm.shape)
+-    for i in range(0, width):
+-        for j in range(0, height):
+-            if ogm[i][j] < 49:
+-                local[i][j] = 1
++    local = (ogm < 49).astype("int32")
+\end{pythoncode}
+\end{code}
+
+\begin{code}
+\caption{Βελτίωση του υπολογισμού της \texttt{viz} με \texttt{numpy}}\label{lst:viz}
+\begin{pythoncode}
+def print_viz(skeleton, resolution, x, y):
+    i, j = numpy.where(skeleton == 1)
+    viz = zip(i * resolution + x, j * resolution + y)
+    RvizHandler.printMarker(
+        viz,
+        1,  # Type: Arrow
+        0,  # Action: Add
+        "map",  # Frame
+        "art_skeletonization",  # Namespace
+        [0.5, 0, 0, 0.5],  # Color RGBA
+        0.05  # Scale
+    )
+\end{pythoncode}
+\end{code}
