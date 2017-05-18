@@ -1,0 +1,32 @@
+\section{Challenge 5: Εξυπνότερη επιλογή υποστόχου}
+Καλούμαστε να βελτιώσουμε την επιλογή υποστόχου.
+Μέχρι τώρα, το ρομπότ προσπαθούσε να επισκεφθεί διαδοχικά όλους τους υποστόχους μιας διαδρομής.
+Μια βελτίωση σε αυτή τη στρατηγική μπορεί να γίνει για τη περίπτωση που το ρομπότ βρίσκεται ήδη σε έναν επόμενο υποστόχο.
+Εδώ, μπορούμε να παραλείψουμε τους προηγούμενους υποστόχους και να συνεχίσουμε τη διαδρομή από εκείνο το σημείο.
+
+\sloppy Θεωρούμε ότι το ρομπότ βρίσκεται καλύπτει έναν υποστόχο αν η απόστασή του με αυτόν είναι 7 pixel.
+Για τον νέο αλγόριθμο που ακολουθείται: για κάθε υποστόχο στη λίστα μετά τον τρέχων υποστόχο
+(\mintinline{python}!self.subtargets[self.next_subtarget::]!)
+υπολογίζουμε τη θέση του στην αρχική λίστα
+\mintinline{python}!idx = len(self.subtargets) - 1 - idx!
+και την απόστασή του από το ρομπότ
+\mintinline{python}!dist = math.hypot(rx - st[0], ry - st[1])!.
+Αν \mintinline{python}!dist < 7! θέτουμε ως επόμενο υποστόχο τον \mintinline{python}!idx + 1! και σταματάμε εκεί την επανάληψη.
+Αν δεν υπάρξει καμία αλλαγή, το ρομπότ συνεχίζει τη πορεία του προς τον παλιό υποστόχο.
+
+\begin{code}
+\caption{Εξυπνότερη επιλογή υποστόχου}
+\begin{pythoncode}
+for idx, st in enumerate(self.subtargets[self.next_subtarget::][::-1]):
+    # Right now, idx refers to the sliced & reversed array, fix it.
+    idx = len(self.subtargets) - 1 - idx
+    assert idx >= self.next_subtarget
+    dist = math.hypot(rx - st[0], ry - st[1])
+    if dist < 7:
+        self.next_subtarget = idx + 1
+        self.counter_to_next_sub = self.count_limit
+        if self.next_subtarget == len(self.subtargets):
+            self.target_exists = False
+        break
+\end{pythoncode}
+\end{code}
