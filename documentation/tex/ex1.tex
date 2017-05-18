@@ -1,0 +1,38 @@
+\section{Challenge 1: Αποφυγή εμποδίων με τη χρήση αισθητήρων laser}\label{section:ex1}
+Σε αυτό το ερώτημα πρέπει να εκμεταλλευτούμε τα δεδομένα από τους laser αισθητήρες του ρομπότ έτσι ώστε το ρομπότ να αποφεύγει τα εμπόδια στον χώρο κατά την κίνησή του.
+Στόχος είναι η ``περιπλάνηση'' (wandering) του ρομπότ χωρίς κάποιο συγκεκριμένο στόχο.
+Έτσι, θέτουμε τη ταχύτητα του ρομπότ στο μέγιστο (ευθεία κίνηση στα $0.3 m/s$) και την μεταβάλουμε ώστε να αποφεύγει τα εμπόδια του χώρου.
+
+\sloppy Τα μήνυμα του ROS από τους αισθητήρες laser είναι τα \texttt{sensor\_msgs/LaserScan Message} και η δομή τους περιγράφεται
+\href{http://docs.ros.org/api/sensor_msgs/html/msg/LaserScan.html}{εδώ}.
+Τα πεδία που μας ενδιαφέρουν είναι τα:
+\mintinline{python}!float32 angle_min!, \mintinline{c}!float32 angle_max! και \mintinline{c}!float32[] ranges!.
+Καθώς στη \mintinline{python}!class LaserDataAggregator! στο αρχείο \url{art_autonomous_exploration/src/laser_data_aggregator.py} δεν περιλαμβάνονται τα \mintinline{python}!angle_min!, \mintinline{python}!angle_max! προστέθηκαν τα σχετικά πεδία.
+
+Το αρχείο στο οποίο πρέπει να συμπληρωθεί ο κώδικας είναι το
+\url{./art_autonomous_exploration/src/speeds_assignment.py}.
+
+Για τις ταχύτητες χρησιμοποιούμε τις σχέσεις~\ref{eq:u} και~\ref{eq:omega} από τη~\cite{etsardou-phd}.
+\begin{align}
+    u_{final}      & = u_{max} \cdot{} (1 - \abs{\omega})^n - c_u \cdot{} \sum_{i=1}^{\text{LaserRays}} \frac{\cos{\left(\theta_i\right)}}{\left(s_i-D_{virt}\right)^2}\label{eq:u}   \\
+    \omega_{final} & = \omega_{max} \cdot{} \omega - c_{\omega} \cdot{} \sum_{i=1}^{\text{LaserRays}} \frac{\sin\left(\theta_i\right)}{\left(s_i - D_{virt}\right)^2}\label{eq:omega}
+\end{align}
+όπου:
+\begin{itemize}
+    \item $u = (1 - \abs{\omega})^n$ οι συντελεστές της γραμμική και γωνιακής ταχύτητα αντίστοιχα.
+          $n$ είναι μια σταθερά που επιλέγεται για τη διόρθωση σπειροειδούς κίνησης.
+          Περισσότερα στην ενότητα~\ref{section:ex3}.
+    \item $u_{max} = 0.3 m/s$, $\omega_{max} = 0.3 rad/s$ οι μέγιστες τιμές της γραμμικής και γωνιακής ταχύτητας αντίστοιχα.
+    \item $\theta_i$ η γωνία της $i$-οστής ακτίνας laser.
+    \item $s_i$ η απόσταση μέχρι το πρώτο εμπόδιο για την $i$-οστή ακτίνα.
+    \item $c_u$, $c_{\omega}$ σταθεροί συντελεστές για τη συνεισφορά των ταχυτήτων αποφυγής.
+    \item $D_{virt}$ απόσταση εικονικού εμποδίου.
+\end{itemize}
+Επιλέχθηκαν τιμές $c_u = 0.001$, $c_w = 0.005$, $D_{virt} = 0.2$.
+Στη περίπτωση της περιπλάνησης θέτουμε τις τιμές $u = 1$ και $\omega = 0$ στους συντελεστές και έτσι οι τελικές σχέσεις είναι:
+\begin{align}
+    u_{final}      & = 0.3 - 0.001 \sum_{i=1}^{\text{LaserRays}} \frac{\cos{\left(\theta_i\right)}}{\left(s_i-0.2\right)^2} \\
+    \omega_{final} & = -0.005 \sum_{i=1}^{\text{LaserRays}} \frac{\sin\left(\theta_i\right)}{\left(s_i - 0.2\right)^2}
+\end{align}
+Επίσης, μεταβλήθηκε η συμπεριφορά των εικονικών εμποδίων:
+Για κάθε $s_i < D_{virt}$ θέτουμε $s_i = D_{virt} + 0.01$ ώστε αν τύχει να περάσουμε το εικονικό εμπόδιο η συνεισφορά της $i$-οστής ακτίνας στη ταχύτητα αποφυγής να μην μειωθεί\label{d-virt}.
